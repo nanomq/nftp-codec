@@ -23,13 +23,23 @@
 
 #define NFTP_TYPE_GIVEME  0x05 // TODO
 
-#define fatal(format, arg...)                                                    \
+#ifndef DEBUG
+#define fatal(format, arg...)                                                 \
 	do {                                                                  \
 		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-		    __FUNCTION__, ##arg);                                   \
+		    __FUNCTION__, ##arg);                                     \
+	} while (0)
+#else
+// Only EXIT in DEBUG MODE
+#define fatal(format, arg...)                                                 \
+	do {                                                                  \
+		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, ##arg);                                     \
 		exit(0);                                                      \
 	} while (0)
-#define log(format, arg...)                                              \
+#endif
+
+#define log(format, arg...)                                           \
 	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
 	    __FUNCTION__, ##arg)
 
@@ -59,9 +69,13 @@ uint32_t nftp_djb_hashn(const uint8_t *, size_t);
 uint32_t nftp_fnv1a_hashn(const uint8_t *, size_t);
 uint8_t  nftp_crc(uint8_t *, size_t);
 
-int nftp_file_read(char *, char **);
+int nftp_file_exist(char *);
+int nftp_file_size(char *, size_t *);
+int nftp_file_read(char *, char **, size_t *);
 int nftp_file_write(char *, char *, size_t);
-uint32_t nftp_file_hash(char *fname);
+int nftp_file_append(char *, char *, size_t);
+int nftp_file_clear(char *);
+int nftp_file_hash(char *fname, uint32_t *);
 
 #endif
 

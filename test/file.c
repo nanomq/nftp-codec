@@ -18,12 +18,28 @@ main()
 {
 	char * demo;
 	char str[] = "It's a demo.\n";
+	char str2[] = "It's a demo.\nIt's a demo.\n";
 	char file[] = "./demo.txt";
+	size_t sz = 0;
 
-	assert(strlen(str) == nftp_file_read(file, &demo));
+	assert(1 == nftp_file_exist(file));
+	assert(0 == nftp_file_clear(file));
+
+	assert(0 == nftp_file_read(file, &demo, &sz));
+	assert(0 == strcmp(demo, ""));
+	assert(0 == sz);
+	free(demo);
+
+	assert(0 == nftp_file_write(file, str, strlen(str)));
+	assert(0 == nftp_file_read(file, &demo, &sz));
 	assert(0 == strcmp(demo, str));
+	assert(sz == strlen(str));
+	free(demo);
 
-	assert(strlen(str) == nftp_file_write(file, str, strlen(str)));
+	assert(0 == nftp_file_append(file, str, strlen(str)));
+	assert(0 == nftp_file_read(file, &demo, &sz));
+	assert(0 == strcmp(demo, str2));
+	assert(sz == strlen(str2));
 	free(demo);
 }
 
