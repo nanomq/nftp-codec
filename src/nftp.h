@@ -23,6 +23,8 @@
 
 #define NFTP_TYPE_GIVEME  0x05 // TODO
 
+#define NFTP_SIZE         32
+
 #ifndef DEBUG
 #define fatal(format, arg...)                                                 \
 	do {                                                                  \
@@ -50,6 +52,14 @@ enum NFTP_ERR {
 	NFTP_ERR_ID,
 	NFTP_ERR_CONTENT,
 	NFTP_ERR_FILE,
+	NFTP_ERR_MEM,
+	NFTP_ERR_OVERFLOW,
+	NFTP_ERR_EMPTY,
+};
+
+enum NFTP_FLAG {
+	NFTP_HEAD = 0x01,
+	NFTP_TAIL,
 };
 
 typedef struct {
@@ -76,6 +86,18 @@ int nftp_file_write(char *, char *, size_t);
 int nftp_file_append(char *, char *, size_t);
 int nftp_file_clear(char *);
 int nftp_file_hash(char *fname, uint32_t *);
+
+typedef struct nftp_iovs nftp_iovs;
+
+int nftp_iovs_alloc(nftp_iovs **);
+int nftp_iovs_append(nftp_iovs *, void *, size_t);
+int nftp_iovs_insert(nftp_iovs *, void *, size_t, size_t);
+int nftp_iovs_push(nftp_iovs *, void *, size_t, int);
+int nftp_iovs_pop(nftp_iovs *, void *, size_t, int);
+int nftp_iovs_cat(nftp_iovs *, nftp_iovs *);
+int nftp_iovs_free(nftp_iovs *);
+size_t nftp_iovs_len(nftp_iovs *);
+size_t nftp_iovs_cap(nftp_iovs *);
 
 #endif
 

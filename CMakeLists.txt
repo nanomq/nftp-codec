@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.13)
 
 project(nftp-codec)
 
-option(DEBUG "This is a default option for DEBUG" ON)
-option(TEST "This is a default option for EXAMPLE" ON)
+option(DEBUG "This is a default option for DEBUG" OFF)
+option(TEST "This is a default option for EXAMPLE" OFF)
 
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")
@@ -18,6 +18,7 @@ endif(DEBUG)
 set(SOURCES 
   src/file.c
   src/hash.c
+  src/iovs.c
   src/nftp.h
 )
 
