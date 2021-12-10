@@ -31,6 +31,8 @@ if(TEST)
   target_link_libraries(test-hash nftp-codec)
   add_executable(test-file test/file.c)
   target_link_libraries(test-file nftp-codec)
+  add_executable(test-iovs test/iovs.c)
+  target_link_libraries(test-iovs nftp-codec)
 endif(TEST)
 
 if(NOT DEBUG)

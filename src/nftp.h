@@ -93,11 +93,13 @@ int nftp_iovs_alloc(nftp_iovs **);
 int nftp_iovs_append(nftp_iovs *, void *, size_t);
 int nftp_iovs_insert(nftp_iovs *, void *, size_t, size_t);
 int nftp_iovs_push(nftp_iovs *, void *, size_t, int);
-int nftp_iovs_pop(nftp_iovs *, void *, size_t, int);
+int nftp_iovs_pop(nftp_iovs *, void **, size_t *, int);
 int nftp_iovs_cat(nftp_iovs *, nftp_iovs *);
 int nftp_iovs_free(nftp_iovs *);
 size_t nftp_iovs_len(nftp_iovs *);
 size_t nftp_iovs_cap(nftp_iovs *);
+
+int nftp_iovs2stream(nftp_iovs *, uint8_t **);
 
 #endif
 

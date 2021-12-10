@@ -7,8 +7,9 @@
 //
 //
 
-#include <sys/uio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/uio.h>
 
 #include "nftp.h"
 
@@ -17,10 +18,11 @@ struct nftp_iovs {
 	size_t        low; // iov loaded from iovs+low
 	size_t        len; // counter of iov in iovs
 	size_t        cap;
+	size_t        iolen;
 };
 
 static int
-resize(nftp_iovs * iovs, size_t sz)
+resize(nftp_iovs *iovs, size_t sz)
 {
 	return (0);
 }
@@ -42,6 +44,7 @@ nftp_iovs_alloc(nftp_iovs **iovsp)
 	iovs->cap = NFTP_SIZE;
 	iovs->len = 0;
 	iovs->low = iovs->cap / 3;
+	iovs->iolen = 0;
 
 	*iovsp = iovs;
 	return (0);
@@ -55,7 +58,7 @@ nftp_iovs_append(nftp_iovs *iovs, void *ptr, size_t len)
 
 // Insert operation is not efficient, using sparingly.
 int
-nftp_iovs_insert(nftp_iovs *iovs, void * ptr, size_t len, size_t pos)
+nftp_iovs_insert(nftp_iovs *iovs, void *ptr, size_t len, size_t pos)
 {
 	if (iovs->low + iovs->len + 1 > iovs->cap) {
 		return (NFTP_ERR_OVERFLOW); // Resize TODO
@@ -66,26 +69,27 @@ nftp_iovs_insert(nftp_iovs *iovs, void * ptr, size_t len, size_t pos)
 	}
 
 	for (int i = iovs->low + iovs->len; i > iovs->low + pos; --i) {
-		iovs->iovs[i].iov_base = iovs->iovs[i-1].iov_base;
-		iovs->iovs[i].iov_len = iovs->iovs[i-1].iov_len;
+		iovs->iovs[i].iov_base = iovs->iovs[i - 1].iov_base;
+		iovs->iovs[i].iov_len  = iovs->iovs[i - 1].iov_len;
 	}
 	iovs->iovs[pos].iov_base = ptr;
-	iovs->iovs[pos].iov_len = len;
+	iovs->iovs[pos].iov_len  = len;
 
+	iovs->iolen += len;
 	return (0);
 }
 
 int
-nftp_iovs_push(nftp_iovs * iovs, void * ptr, size_t len, int flag)
+nftp_iovs_push(nftp_iovs *iovs, void *ptr, size_t len, int flag)
 {
-	struct iovec * iov;
+	struct iovec *iov;
 
 	if (flag == NFTP_HEAD) {
 		if (iovs->low == 0) {
 			return (NFTP_ERR_OVERFLOW); // Resize TODO
 		}
 
-		iovs->low --;
+		iovs->low--;
 		iov = &iovs->iovs[iovs->low];
 	} else if (flag == NFTP_TAIL) {
 		if (iovs->low + iovs->len > iovs->cap) {
@@ -98,11 +102,12 @@ nftp_iovs_push(nftp_iovs * iovs, void * ptr, size_t len, int flag)
 	iov->iov_len  = len;
 
 	iovs->len++;
+	iovs->iolen += len;
 	return (0);
 }
 
 int
-nftp_iovs_pop(nftp_iovs *iovs, void *ptr, size_t len, int flag)
+nftp_iovs_pop(nftp_iovs *iovs, void **ptrp, size_t *lenp, int flag)
 {
 	struct iovec *iov;
 
@@ -114,13 +119,16 @@ nftp_iovs_pop(nftp_iovs *iovs, void *ptr, size_t len, int flag)
 		iov = &iovs->iovs[iovs->low];
 		iovs->low++;
 	} else if (flag == NFTP_TAIL) {
-		iov = &iovs->iovs[iovs->low + iovs->len];
+		iov = &iovs->iovs[iovs->low + iovs->len - 1];
 	}
 
-	iov->iov_len  = 0;
+	*ptrp         = iov->iov_base;
+	*lenp         = iov->iov_len;
 	iov->iov_base = NULL;
+	iov->iov_len  = 0;
 
 	iovs->len--;
+	iovs->iolen -= (*lenp);
 	return 0;
 }
 
@@ -146,12 +154,13 @@ nftp_iovs_cat(nftp_iovs *dest, nftp_iovs *src)
 	}
 
 	int idx = d->low + d->len;
-	for (int i=0; i<s->len; ++i) {
+	for (int i = 0; i < s->len; ++i) {
 		d->iovs[idx + i].iov_base = s->iovs[s->low + i].iov_base;
-		d->iovs[idx + i].iov_len = s->iovs[s->low + i].iov_len;
+		d->iovs[idx + i].iov_len  = s->iovs[s->low + i].iov_len;
 	}
 
 	d->len += s->len;
+	d->iolen += s->iolen;
 	return (0);
 }
 
@@ -165,5 +174,21 @@ nftp_iovs_free(nftp_iovs *iovs)
 	free(iovs->iovs);
 	free(iovs);
 	return (0);
+}
+
+int
+nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp)
+{
+	size_t pos = 0;
+	uint8_t * str = malloc(iovs->iolen);
+	log("iolen %ld", iovs->iolen);
+
+	for (int i=iovs->low; i<iovs->low + iovs->len; ++i) {
+		memcpy(str + pos, iovs->iovs[i].iov_base, iovs->iovs[i].iov_len);
+		pos += iovs->iovs[i].iov_len;
+	}
+
+	*strp = str;
+	return 0;
 }
 
