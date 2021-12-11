@@ -8,11 +8,12 @@
 //
 
 #include <assert.h>
+#include <string.h>
 
 #include "nftp.h"
 
 int
-main()
+test_iovs()
 {
 	nftp_iovs *iovs;
 	nftp_iovs *iovs1;
@@ -38,7 +39,7 @@ main()
 	assert(3 == nftp_iovs_len(iovs));
 	assert(NFTP_SIZE == nftp_iovs_cap(iovs));
 
-	assert(0 == nftp_iovs_pop(iovs, &str2, &sz, NFTP_HEAD)); // bcdef
+	assert(0 == nftp_iovs_pop(iovs, (void **)&str2, &sz, NFTP_HEAD)); // bcdef
 	assert(2 == nftp_iovs_len(iovs));
 	assert('a' == *str2);
 	assert(1 == sz);
@@ -53,11 +54,13 @@ main()
 	assert(0 == nftp_iovs_cat(iovs, iovs1)); // bcdefg
 	assert(3 == nftp_iovs_len(iovs));
 
-	assert(0 == nftp_iovs2stream(iovs, &str2));
+	assert(0 == nftp_iovs2stream(iovs, (uint8_t **)&str2));
 	assert(0 == strncmp(str2, str1, strlen(str1)));
 
 	assert(0 == nftp_iovs_free(iovs));
 	assert(0 == nftp_iovs_free(iovs1));
 	free(str2);
+
+	return (0);
 }
 

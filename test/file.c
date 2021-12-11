@@ -14,7 +14,7 @@
 #include "nftp.h"
 
 int
-main()
+test_file()
 {
 	char * demo;
 	char str[] = "It's a demo.\n";
@@ -41,5 +41,7 @@ main()
 	assert(0 == strcmp(demo, str2));
 	assert(sz == strlen(str2));
 	free(demo);
+
+	return (0);
 }
 

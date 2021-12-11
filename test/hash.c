@@ -13,7 +13,7 @@
 #include "nftp.h"
 
 int
-main()
+test_hash()
 {
 	assert(nftp_djb_hashn((uint8_t *) "asdfghjkl", 9) ==
 	    nftp_djb_hashn((uint8_t *) "asdfghjkl", 9));
@@ -21,5 +21,7 @@ main()
 	    nftp_fnv1a_hashn((uint8_t *) "asdfghjkl", 9));
 	assert(nftp_crc((uint8_t *) "asdfghjkl", 9) ==
 	    nftp_crc((uint8_t *) "asdfghjkl", 9));
+
+	return (0);
 }
 
