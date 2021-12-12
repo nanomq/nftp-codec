@@ -181,7 +181,6 @@ nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp)
 {
 	size_t pos = 0;
 	uint8_t * str = malloc(iovs->iolen);
-	log("iolen %ld", iovs->iolen);
 
 	for (int i=iovs->low; i<iovs->low + iovs->len; ++i) {
 		memcpy(str + pos, iovs->iovs[i].iov_base, iovs->iovs[i].iov_len);

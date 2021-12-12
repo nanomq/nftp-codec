@@ -24,5 +24,7 @@ jobs:
 
             - name: nftp test
               run: |
+                  cd build
                   ./test
+                  rm -f ./demo.txt
 
