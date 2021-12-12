@@ -1,0 +1,28 @@
+name: nftp-test
+
+on:
+    push:
+        branch: [main]
+
+jobs: 
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: install lib
+              run: |
+                  sudo apt update
+                  sudo apt install -y cmake
+                  sudo apt install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+            - uses: actions/checkout@v2
+
+            - name: build nftp
+              run: |
+                  mkdir -p build
+                  cd build
+                  cmake -DDEBUG=ON ..
+                  make
+
+            - name: nftp test
+              run: |
+                  ./test
+
