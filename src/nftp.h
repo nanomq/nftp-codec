@@ -75,6 +75,7 @@ typedef struct {
 	uint8_t * content;
 	size_t    ctlen;
 	uint8_t   crc;
+	uint8_t * exbuf;
 } nftp;
 
 #define nftp_set(nftp, key, val)                                 \

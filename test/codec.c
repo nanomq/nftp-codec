@@ -16,12 +16,20 @@
 #include "nftp.h"
 
 static int test_codec_hello();
+static int test_codec_ack();
+static int test_codec_file();
+static int test_codec_end();
+
+static int test_codec_giveme(); // TODO
 
 int
 test_codec()
 {
 	log("test_codec");
 	test_codec_hello();
+	test_codec_ack();
+	test_codec_file();
+	test_codec_end();
 
 	return (0);
 }
@@ -53,11 +61,35 @@ test_codec_hello()
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(17 == len);
 	for (int i=0; i<len; i++) {
-		log("%x %x", demo1_hello[i], v[i]);
 		assert(demo1_hello[i] == v[i]);
 	}
 
 	assert(0 == nftp_free(p));
+	free(v);
+	return (0);
+}
+
+static int
+test_codec_ack()
+{
+	return (0);
+}
+
+static int
+test_codec_file()
+{
+	return (0);
+}
+
+static int
+test_codec_end()
+{
+	return (0);
+}
+
+static int
+test_codec_giveme()
+{
 	return (0);
 }
 

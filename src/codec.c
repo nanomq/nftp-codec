@@ -31,6 +31,7 @@ nftp_alloc(nftp ** pp)
 	p->fileflag = 0;
 	p->content = 0;
 	p->ctlen = 0;
+	p->exbuf = malloc(sizeof(char) * 6);
 
 	*pp = p;
 	return (0);
@@ -108,8 +109,6 @@ nftp_decode(nftp *p, uint8_t *v)
 int
 nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 {
-	uint8_t buf[4];
-
 	if (!p || !iovs) {
 		return (NFTP_ERR_EMPTY);
 	}
@@ -122,8 +121,8 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 	case NFTP_TYPE_HELLO:
 		nftp_iovs_append(iovs, (void *)&p->blocks, 1);
 
-		nftp_put_u16(buf, p->namelen);
-		nftp_iovs_append(iovs, (void *)buf, 2);
+		nftp_put_u16(p->exbuf + 4, p->namelen);
+		nftp_iovs_append(iovs, (void *)p->exbuf + 4, 2);
 		nftp_iovs_append(iovs, (void *)p->filename, p->namelen);
 
 		nftp_iovs_append(iovs, (void *)p->content, 4);
@@ -139,8 +138,8 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		nftp_iovs_append(iovs, (void *)&p->fileflag, 4);
 		nftp_iovs_append(iovs, (void *)p->content, p->ctlen);
 
-		buf[0] = nftp_crc(p->content, p->ctlen);
-		nftp_iovs_append(iovs, (void *)buf, 1);
+		p->crc = nftp_crc(p->content, p->ctlen);
+		nftp_iovs_append(iovs, (void *)p->crc, 1);
 		break;
 
 	case NFTP_TYPE_GIVEME:
@@ -152,8 +151,8 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 	}
 
 	nftp_iovs_push(iovs, (void *)&p->id, 1, NFTP_HEAD);
-	nftp_put_u32(buf, p->len);
-	nftp_iovs_push(iovs, (void *)buf, 4, NFTP_HEAD);
+	nftp_put_u32(p->exbuf, p->len);
+	nftp_iovs_push(iovs, (void *)p->exbuf, 4, NFTP_HEAD);
 	nftp_iovs_push(iovs, (void *)&p->type, 1, NFTP_HEAD);
 	return (0);
 }
@@ -165,8 +164,11 @@ nftp_encode(nftp * p, uint8_t ** vp, size_t * len)
 	nftp_iovs * iovs;
 
 	nftp_iovs_alloc(&iovs);
+
 	nftp_encode_iovs(p, iovs);
 	nftp_iovs2stream(iovs, &v, len);
+
+	nftp_iovs_free(iovs);
 
 	*vp = v;
 	return (0);
@@ -184,6 +186,9 @@ nftp_free(nftp * p)
 	}
 	if (p->content) {
 		free(p->content);
+	}
+	if (p->exbuf) {
+		free(p->exbuf);
 	}
 
 	free(p);

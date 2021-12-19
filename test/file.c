@@ -16,6 +16,7 @@
 int
 test_file()
 {
+	log("test_file");
 	char * demo;
 	char str[] = "It's a demo.\n";
 	char str2[] = "It's a demo.\nIt's a demo.\n";
