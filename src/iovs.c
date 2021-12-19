@@ -177,7 +177,7 @@ nftp_iovs_free(nftp_iovs *iovs)
 }
 
 int
-nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp)
+nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp, size_t *len)
 {
 	size_t pos = 0;
 	uint8_t * str = malloc(iovs->iolen);
@@ -188,6 +188,7 @@ nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp)
 	}
 
 	*strp = str;
+	*len = iovs->iolen;
 	return 0;
 }
 

@@ -55,6 +55,8 @@ enum NFTP_ERR {
 	NFTP_ERR_MEM,
 	NFTP_ERR_OVERFLOW,
 	NFTP_ERR_EMPTY,
+	NFTP_ERR_PROTO,
+	NFTP_ERR_DIRTY,
 };
 
 enum NFTP_FLAG {
@@ -74,6 +76,14 @@ typedef struct {
 	size_t    ctlen;
 	uint8_t   crc;
 } nftp;
+
+#define nftp_proto_set(nftp, key, val)                                 \
+	do {                                                           \
+		if (offsetof(nftp, crc) == offsetof(nftp, key)) {      \
+			fatal("Macro is not supported for CRC Field"); \
+		}                                                      \
+		nftp->key = val;                                       \
+	} while (0)
 
 uint32_t nftp_djb_hashn(const uint8_t *, size_t);
 uint32_t nftp_fnv1a_hashn(const uint8_t *, size_t);
@@ -99,7 +109,38 @@ int nftp_iovs_free(nftp_iovs *);
 size_t nftp_iovs_len(nftp_iovs *);
 size_t nftp_iovs_cap(nftp_iovs *);
 
-int nftp_iovs2stream(nftp_iovs *, uint8_t **);
+int nftp_iovs2stream(nftp_iovs *, uint8_t **, size_t *);
+
+#define nftp_put_u32(ptr, u)                                  \
+	do {                                                  \
+		(ptr)[0] = (uint8_t)(((uint32_t)(u)) >> 24u); \
+		(ptr)[1] = (uint8_t)(((uint32_t)(u)) >> 16u); \
+		(ptr)[2] = (uint8_t)(((uint32_t)(u)) >> 8u);  \
+		(ptr)[3] = (uint8_t)((uint32_t)(u));          \
+	} while (0)
+
+#define nftp_get_u32(ptr, v)                           \
+	v = (((uint32_t)((uint8_t)(ptr)[0])) << 24u) + \
+	    (((uint32_t)((uint8_t)(ptr)[1])) << 16u) + \
+	    (((uint32_t)((uint8_t)(ptr)[2])) << 8u) +  \
+	    (((uint32_t)(uint8_t)(ptr)[3]))
+
+#define nftp_get_u16(ptr, u)                                    \
+	do {                                                 \
+		(ptr)[0] = (uint8_t)(((uint16_t)(u)) >> 8u); \
+		(ptr)[1] = (uint8_t)((uint16_t)(u));         \
+	} while (0)
+
+#define nftp_put_u16(ptr, v)                             \
+	v = (((uint16_t)((uint8_t)(ptr)[0])) << 8u) + \
+	    (((uint16_t)(uint8_t)(ptr)[1]))
+
+int nftp_proto_alloc(nftp **);
+int nftp_proto_decode_iovs(nftp *, nftp_iovs *, size_t);
+int nftp_proto_decode(nftp *, uint8_t *);
+int nftp_proto_encode_iovs(nftp *, nftp_iovs *);
+int nftp_proto_encode(nftp *, uint8_t **, size_t *);
+int nftp_proto_free(nftp *);
 
 #endif
 

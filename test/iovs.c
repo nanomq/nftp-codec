@@ -54,7 +54,7 @@ test_iovs()
 	assert(0 == nftp_iovs_cat(iovs, iovs1)); // bcdefg
 	assert(3 == nftp_iovs_len(iovs));
 
-	assert(0 == nftp_iovs2stream(iovs, (uint8_t **)&str2));
+	assert(0 == nftp_iovs2stream(iovs, (uint8_t **)&str2, &sz));
 	assert(0 == strncmp(str2, str1, strlen(str1)));
 
 	assert(0 == nftp_iovs_free(iovs));
