@@ -9,19 +9,18 @@
 // This is a Customized File Transfer Protocol nftp.
 //
 
-#include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "nftp.h"
 
 int
-nftp_proto_alloc(nftp ** pp)
+nftp_alloc(nftp ** pp)
 {
 	nftp * p;
 
 	if ((p = malloc(sizeof(nftp))) == NULL) {
-		return NFTP_ERR_MEM);
+		return (NFTP_ERR_MEM);
 	}
 
 	p->type = 0x00;
@@ -38,23 +37,23 @@ nftp_proto_alloc(nftp ** pp)
 }
 
 int
-nftp_proto_decode_iovs(nftp * p, nftp_iovs * iovs, size_t len)
+nftp_decode_iovs(nftp * p, nftp_iovs * iovs, size_t len)
 {
 	uint8_t * v;
-	int iolen;
+	size_t iolen;
 
 	if (!p || !iovs || len == 0) {
 		return (NFTP_ERR_EMPTY);
 	}
 
 	nftp_iovs2stream(iovs, &v, &iolen);
-	nftp_proto_decode(p, v);
+	nftp_decode(p, v);
 
 	return (0);
 }
 
 int
-nftp_proto_decode(nftp *p, uint8_t *v)
+nftp_decode(nftp *p, uint8_t *v)
 {
 	size_t pos = 0;
 
@@ -67,17 +66,18 @@ nftp_proto_decode(nftp *p, uint8_t *v)
 	p->id = *(v + pos); ++pos; // id
 
 	// Option parameter
-	switch (p->type) {
+	switch ((uint32_t)p->type) {
 	case NFTP_TYPE_HELLO:
 		if (p->id != 0) return (NFTP_ERR_ID);
 		p->blocks = (int) *(v + pos); ++pos;
-		p->namelen = nftp_get_u16(v + pos); pos += 2;
+		nftp_get_u16(v + pos, p->namelen); pos += 2;
 
 		p->filename = malloc(sizeof(char) * (1 + p->namelen));
 		memcpy(p->filename, v + pos, p->namelen); pos += p->namelen;
 		p->filename[p->namelen] = '\0';
 
-		p->ctlen = p->len - pos - 1;
+		p->ctlen = p->len - pos;
+		p->content = malloc(sizeof(char) * p->ctlen);
 		memcpy(p->content, v + pos, p->ctlen); pos = p->len;
 		break;
 
@@ -106,9 +106,9 @@ nftp_proto_decode(nftp *p, uint8_t *v)
 }
 
 int
-nftp_proto_encode_iovs(nftp * p, nftp_iovs * iovs)
+nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 {
-	uint8_t buf[2];
+	uint8_t buf[4];
 
 	if (!p || !iovs) {
 		return (NFTP_ERR_EMPTY);
@@ -120,27 +120,27 @@ nftp_proto_encode_iovs(nftp * p, nftp_iovs * iovs)
 
 	switch (p->type) {
 	case NFTP_TYPE_HELLO:
-		nftp_iovs_append(iovs, blocks, 1);
+		nftp_iovs_append(iovs, (void *)&p->blocks, 1);
 
 		nftp_put_u16(buf, p->namelen);
-		nftp_iovs_append(iovs, buf, 2);
-		nftp_iovs_append(iovs, p->filename, p->namelen);
+		nftp_iovs_append(iovs, (void *)buf, 2);
+		nftp_iovs_append(iovs, (void *)p->filename, p->namelen);
 
-		nftp_iovs_append(iovs, p->content, 4);
+		nftp_iovs_append(iovs, (void *)p->content, 4);
 		break;
 		
 	case NFTP_TYPE_ACK:
-		nftp_iovs_append(iovs, p->fileflag, 4);
+		nftp_iovs_append(iovs, (void *)&p->fileflag, 4);
 		break;
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (p->id == 0) return (NFTP_ERR_ID);
-		nftp_iovs_append(iovs, p->fileflag, 4);
-		nftp_iovs_append(iovs, p->content, p->ctlen);
+		nftp_iovs_append(iovs, (void *)&p->fileflag, 4);
+		nftp_iovs_append(iovs, (void *)p->content, p->ctlen);
 
 		buf[0] = nftp_crc(p->content, p->ctlen);
-		nftp_iovs_append(iovs, buf, 1);
+		nftp_iovs_append(iovs, (void *)buf, 1);
 		break;
 
 	case NFTP_TYPE_GIVEME:
@@ -151,28 +151,29 @@ nftp_proto_encode_iovs(nftp * p, nftp_iovs * iovs)
 		break;
 	}
 
-	nftp_iovs_push(iovs, p->id, 1, NFTP_HEAD);
-	nftp_iovs_append(iovs, p->len, 4, NFTP_HEAD);
-	nftp_iovs_append(iovs, p->type, 1, NFTP_HEAD);
+	nftp_iovs_push(iovs, (void *)&p->id, 1, NFTP_HEAD);
+	nftp_put_u32(buf, p->len);
+	nftp_iovs_push(iovs, (void *)buf, 4, NFTP_HEAD);
+	nftp_iovs_push(iovs, (void *)&p->type, 1, NFTP_HEAD);
 	return (0);
 }
 
 int
-nftp_proto_encode(nftp * p, uint8_t ** vp, size_t * len)
+nftp_encode(nftp * p, uint8_t ** vp, size_t * len)
 {
 	uint8_t * v;
 	nftp_iovs * iovs;
 
 	nftp_iovs_alloc(&iovs);
-	nftp_proto_encode(p, iovs);
+	nftp_encode_iovs(p, iovs);
 	nftp_iovs2stream(iovs, &v, len);
 
-	**vp = v;
+	*vp = v;
 	return (0);
 }
 
 int
-nftp_proto_free(nftp * p)
+nftp_free(nftp * p)
 {
 	if (p == NULL) {
 		return (NFTP_ERR_EMPTY);

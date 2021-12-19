@@ -19,6 +19,7 @@ set(SOURCES
   src/file.c
   src/hash.c
   src/iovs.c
+  src/codec.c
   src/nftp.h
 )
 
@@ -27,7 +28,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_library(nftp-codec ${SOURCES})
 
 if(TEST)
-  add_executable(test test/test.c test/hash.c test/file.c test/iovs.c)
+  add_executable(test
+	  test/test.c
+	  test/hash.c
+	  test/file.c
+	  test/iovs.c
+	  test/codec.c)
   target_link_libraries(test nftp-codec)
 endif(TEST)
 

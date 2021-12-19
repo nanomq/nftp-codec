@@ -22,6 +22,13 @@ test_hash()
 	assert(nftp_crc((uint8_t *) "asdfghjkl", 9) ==
 	    nftp_crc((uint8_t *) "asdfghjkl", 9));
 
+	uint32_t a = nftp_djb_hashn((uint8_t *) "ab.c", 4);
+	uint8_t a1 = (uint8_t) (0xff & (a >> 24u));
+	uint8_t a2 = (uint8_t) (0xff & (a >> 16u));
+	uint8_t a3 = (uint8_t) (0xff & (a >> 8u));
+	uint8_t a4 = (uint8_t) (0xff & a);
+	// log("%x%x%x%x", a1, a2, a3, a4);
+
 	return (0);
 }
 

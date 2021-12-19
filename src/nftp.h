@@ -67,17 +67,17 @@ enum NFTP_FLAG {
 typedef struct {
 	uint8_t   type;
 	uint32_t  len;
-	int       id;
-	int       blocks;
+	uint8_t   id;
+	uint8_t   blocks;
 	char *    filename;
-	uint8_t   namelen;
+	uint16_t  namelen;
 	uint32_t  fileflag;
 	uint8_t * content;
 	size_t    ctlen;
 	uint8_t   crc;
 } nftp;
 
-#define nftp_proto_set(nftp, key, val)                                 \
+#define nftp_set(nftp, key, val)                                 \
 	do {                                                           \
 		if (offsetof(nftp, crc) == offsetof(nftp, key)) {      \
 			fatal("Macro is not supported for CRC Field"); \
@@ -125,22 +125,22 @@ int nftp_iovs2stream(nftp_iovs *, uint8_t **, size_t *);
 	    (((uint32_t)((uint8_t)(ptr)[2])) << 8u) +  \
 	    (((uint32_t)(uint8_t)(ptr)[3]))
 
-#define nftp_get_u16(ptr, u)                                    \
+#define nftp_put_u16(ptr, u)                                    \
 	do {                                                 \
 		(ptr)[0] = (uint8_t)(((uint16_t)(u)) >> 8u); \
 		(ptr)[1] = (uint8_t)((uint16_t)(u));         \
 	} while (0)
 
-#define nftp_put_u16(ptr, v)                             \
+#define nftp_get_u16(ptr, v)                             \
 	v = (((uint16_t)((uint8_t)(ptr)[0])) << 8u) + \
 	    (((uint16_t)(uint8_t)(ptr)[1]))
 
-int nftp_proto_alloc(nftp **);
-int nftp_proto_decode_iovs(nftp *, nftp_iovs *, size_t);
-int nftp_proto_decode(nftp *, uint8_t *);
-int nftp_proto_encode_iovs(nftp *, nftp_iovs *);
-int nftp_proto_encode(nftp *, uint8_t **, size_t *);
-int nftp_proto_free(nftp *);
+int nftp_alloc(nftp **);
+int nftp_decode_iovs(nftp *, nftp_iovs *, size_t);
+int nftp_decode(nftp *, uint8_t *);
+int nftp_encode_iovs(nftp *, nftp_iovs *);
+int nftp_encode(nftp *, uint8_t **, size_t *);
+int nftp_free(nftp *);
 
 #endif
 

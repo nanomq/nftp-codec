@@ -13,4 +13,5 @@ main()
 	test_hash();
 	test_file();
 	test_iovs();
+	// test_codec();
 }
