@@ -180,7 +180,10 @@ int
 nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp, size_t *len)
 {
 	size_t pos = 0;
-	uint8_t * str = malloc(iovs->iolen);
+	uint8_t * str;
+	if ((str= malloc(iovs->iolen)) == NULL) {
+		return (NFTP_ERR_MEM);
+	}
 
 	for (int i=iovs->low; i<iovs->low + iovs->len; ++i) {
 		memcpy(str + pos, iovs->iovs[i].iov_base, iovs->iovs[i].iov_len);

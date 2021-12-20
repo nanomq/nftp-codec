@@ -57,6 +57,8 @@ enum NFTP_ERR {
 	NFTP_ERR_EMPTY,
 	NFTP_ERR_PROTO,
 	NFTP_ERR_DIRTY,
+	NFTP_ERR_IOVS,
+	NFTP_ERR_STREAM,
 };
 
 enum NFTP_FLAG {
@@ -137,8 +139,8 @@ int nftp_iovs2stream(nftp_iovs *, uint8_t **, size_t *);
 	    (((uint16_t)(uint8_t)(ptr)[1]))
 
 int nftp_alloc(nftp **);
-int nftp_decode_iovs(nftp *, nftp_iovs *, size_t);
-int nftp_decode(nftp *, uint8_t *);
+int nftp_decode_iovs(nftp *, nftp_iovs *);
+int nftp_decode(nftp *, uint8_t *, size_t);
 int nftp_encode_iovs(nftp *, nftp_iovs *);
 int nftp_encode(nftp *, uint8_t **, size_t *);
 int nftp_free(nftp *);

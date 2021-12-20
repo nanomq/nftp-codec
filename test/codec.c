@@ -49,7 +49,7 @@ test_codec_hello()
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_hello));
+	assert(0 == nftp_decode(p, demo1_hello, 17));
 
 	assert(NFTP_TYPE_HELLO == p->type);
 	assert(17 == p->len);
@@ -83,7 +83,7 @@ test_codec_ack()
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_ack));
+	assert(0 == nftp_decode(p, demo1_ack, 10));
 
 	assert(NFTP_TYPE_ACK == p->type);
 	assert(10 == p->len);
@@ -116,7 +116,7 @@ test_codec_file()
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_file));
+	assert(0 == nftp_decode(p, demo1_file, 17));
 
 	assert(NFTP_TYPE_FILE == p->type);
 	assert(17 == p->len);
@@ -150,7 +150,7 @@ test_codec_end()
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_file));
+	assert(0 == nftp_decode(p, demo1_file, 17));
 
 	assert(NFTP_TYPE_END == p->type);
 	assert(17 == p->len);

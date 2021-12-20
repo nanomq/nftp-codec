@@ -31,40 +31,46 @@ nftp_alloc(nftp ** pp)
 	p->fileflag = 0;
 	p->content = 0;
 	p->ctlen = 0;
-	p->exbuf = malloc(sizeof(char) * 8);
+	if ((p->exbuf = malloc(sizeof(char) * 8)) == NULL) {
+		return (NFTP_ERR_MEM);
+	}
 
 	*pp = p;
 	return (0);
 }
 
 int
-nftp_decode_iovs(nftp * p, nftp_iovs * iovs, size_t len)
+nftp_decode_iovs(nftp * p, nftp_iovs * iovs)
 {
 	uint8_t * v;
 	size_t iolen;
 
-	if (!p || !iovs || len == 0) {
+	if (!p || !iovs) {
 		return (NFTP_ERR_EMPTY);
 	}
 
-	nftp_iovs2stream(iovs, &v, &iolen);
-	nftp_decode(p, v);
+	if (0 != nftp_iovs2stream(iovs, &v, &iolen)) {
+		return (NFTP_ERR_IOVS);
+	}
 
-	return (0);
+	return nftp_decode(p, v, iolen);
 }
 
 int
-nftp_decode(nftp *p, uint8_t *v)
+nftp_decode(nftp *p, uint8_t *v, size_t len)
 {
 	size_t pos = 0;
 
-	if (!p || !v) {
-		return (NFTP_ERR_EMPTY);
-	}
+	if (!p || !v || !len) return (NFTP_ERR_EMPTY);
+	// Ensure the length of stream is longger than fixed header
+	if (len < 6) return (NFTP_ERR_STREAM);
 
 	p->type = *(v + pos); ++pos; // type
 	nftp_get_u32(v + pos, p->len); pos += 4; // len
 	p->id = *(v + pos); ++pos; // id
+
+	// Check if iolen eq to the length from decoding
+	if (len != p->len) return (NFTP_ERR_STREAM);
 
 	// Option parameter
 	switch ((uint32_t)p->type) {
@@ -73,12 +79,14 @@ nftp_decode(nftp *p, uint8_t *v)
 		p->blocks = (int) *(v + pos); ++pos;
 		nftp_get_u16(v + pos, p->namelen); pos += 2;
 
-		p->filename = malloc(sizeof(char) * (1 + p->namelen));
+		if ((p->filename = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
+			return (NFTP_ERR_MEM);
 		memcpy(p->filename, v + pos, p->namelen); pos += p->namelen;
 		p->filename[p->namelen] = '\0';
 
 		p->ctlen = p->len - pos;
-		p->content = malloc(sizeof(char) * p->ctlen);
+		if ((p->content = malloc(sizeof(char) * p->ctlen)) == NULL)
+			return (NFTP_ERR_MEM);
 		memcpy(p->content, v + pos, p->ctlen); pos = p->len;
 		break;
 
@@ -93,7 +101,8 @@ nftp_decode(nftp *p, uint8_t *v)
 		nftp_get_u32(v + pos, p->fileflag); pos += 4;
 
 		p->ctlen = p->len - pos - 1;
-		p->content = malloc(sizeof(char) * p->ctlen);
+		if ((p->content = malloc(sizeof(char) * p->ctlen)) == NULL)
+			return (NFTP_ERR_MEM);
 		memcpy(p->content, v + pos, p->ctlen); pos = p->len;
 
 		p->crc = *(v + pos - 1);
@@ -101,10 +110,10 @@ nftp_decode(nftp *p, uint8_t *v)
 
 	case NFTP_TYPE_GIVEME: // TODO
 		fatal("NOT SUPPORTED");
-		break;
+		return (NFTP_ERR_PROTO);
 	default:
 		fatal("UNDEFINED TYPE PACKET");
-		break;
+		return (NFTP_ERR_PROTO);
 	}
 	return (0);
 }
@@ -112,54 +121,58 @@ nftp_decode(nftp *p, uint8_t *v)
 int
 nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 {
-	if (!p || !iovs) {
-		return (NFTP_ERR_EMPTY);
-	}
-	if (nftp_iovs_len(iovs) != 0) {
-		return (NFTP_ERR_DIRTY);
-	}
+	int rv = 0;
+
+	if (!p || !iovs) return (NFTP_ERR_EMPTY);
+	if (nftp_iovs_len(iovs) != 0) return (NFTP_ERR_IOVS); // Dirty Iovs
 	// Type & len & Id will push in the end
 
 	switch (p->type) {
 	case NFTP_TYPE_HELLO:
-		nftp_iovs_append(iovs, (void *)&p->blocks, 1);
+		rv |= nftp_iovs_append(iovs, (void *)&p->blocks, 1);
 
 		nftp_put_u16(p->exbuf + 4, p->namelen);
-		nftp_iovs_append(iovs, (void *)p->exbuf + 4, 2);
-		nftp_iovs_append(iovs, (void *)p->filename, p->namelen);
+		rv |= nftp_iovs_append(iovs, (void *)p->exbuf + 4, 2);
+		rv |= nftp_iovs_append(iovs, (void *)p->filename, p->namelen);
 
-		nftp_iovs_append(iovs, (void *)p->content, 4);
+		rv |= nftp_iovs_append(iovs, (void *)p->content, 4);
 		break;
 		
 	case NFTP_TYPE_ACK:
 		nftp_put_u32(p->exbuf + 4, p->fileflag);
-		nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
+		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
 		break;
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (p->id == 0) return (NFTP_ERR_ID);
 		nftp_put_u32(p->exbuf + 4, p->fileflag);
-		nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
-		nftp_iovs_append(iovs, (void *)p->content, p->ctlen);
+		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
+		rv |= nftp_iovs_append(iovs, (void *)p->content, p->ctlen);
 
 		p->crc = nftp_crc(p->content, p->ctlen);
-		nftp_iovs_append(iovs, (void *)&p->crc, 1);
+		rv |= nftp_iovs_append(iovs, (void *)&p->crc, 1);
 		break;
 
 	case NFTP_TYPE_GIVEME:
 		fatal("NOT SUPPORTED");
-		break;
+		return (NFTP_ERR_PROTO);
 	default:
 		fatal("UNDEFINED TYPE PACKET");
-		break;
+		return (NFTP_ERR_PROTO);
 	}
+	if (0 != rv) goto error;
 
-	nftp_iovs_push(iovs, (void *)&p->id, 1, NFTP_HEAD);
+	rv |= nftp_iovs_push(iovs, (void *)&p->id, 1, NFTP_HEAD);
 	nftp_put_u32(p->exbuf, p->len);
-	nftp_iovs_push(iovs, (void *)p->exbuf, 4, NFTP_HEAD);
-	nftp_iovs_push(iovs, (void *)&p->type, 1, NFTP_HEAD);
+	rv |= nftp_iovs_push(iovs, (void *)p->exbuf, 4, NFTP_HEAD);
+	rv |= nftp_iovs_push(iovs, (void *)&p->type, 1, NFTP_HEAD);
+	if (0 != rv) goto error;
+
 	return (0);
+
+error:
+	return (NFTP_ERR_IOVS);
 }
 
 int
@@ -167,11 +180,17 @@ nftp_encode(nftp * p, uint8_t ** vp, size_t * len)
 {
 	uint8_t * v;
 	nftp_iovs * iovs;
+	int rv = 0;
 
-	nftp_iovs_alloc(&iovs);
-
-	nftp_encode_iovs(p, iovs);
-	nftp_iovs2stream(iovs, &v, len);
+	if ((rv = nftp_iovs_alloc(&iovs)) != 0) {
+		return rv;
+	}
+	if ((rv = nftp_encode_iovs(p, iovs)) != 0) {
+		return rv;
+	}
+	if ((rv = nftp_iovs2stream(iovs, &v, len)) != 0) {
+		return rv;
+	}
 
 	nftp_iovs_free(iovs);
 
