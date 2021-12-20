@@ -31,7 +31,7 @@ nftp_alloc(nftp ** pp)
 	p->fileflag = 0;
 	p->content = 0;
 	p->ctlen = 0;
-	p->exbuf = malloc(sizeof(char) * 6);
+	p->exbuf = malloc(sizeof(char) * 8);
 
 	*pp = p;
 	return (0);
@@ -91,9 +91,12 @@ nftp_decode(nftp *p, uint8_t *v)
 	case NFTP_TYPE_END:
 		if (p->id == 0) return (NFTP_ERR_ID);
 		nftp_get_u32(v + pos, p->fileflag); pos += 4;
+
 		p->ctlen = p->len - pos - 1;
+		p->content = malloc(sizeof(char) * p->ctlen);
 		memcpy(p->content, v + pos, p->ctlen); pos = p->len;
-		p->crc = *(v + pos);
+
+		p->crc = *(v + pos - 1);
 		break;
 
 	case NFTP_TYPE_GIVEME: // TODO
@@ -129,17 +132,19 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		break;
 		
 	case NFTP_TYPE_ACK:
-		nftp_iovs_append(iovs, (void *)&p->fileflag, 4);
+		nftp_put_u32(p->exbuf + 4, p->fileflag);
+		nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
 		break;
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (p->id == 0) return (NFTP_ERR_ID);
-		nftp_iovs_append(iovs, (void *)&p->fileflag, 4);
+		nftp_put_u32(p->exbuf + 4, p->fileflag);
+		nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
 		nftp_iovs_append(iovs, (void *)p->content, p->ctlen);
 
 		p->crc = nftp_crc(p->content, p->ctlen);
-		nftp_iovs_append(iovs, (void *)p->crc, 1);
+		nftp_iovs_append(iovs, (void *)&p->crc, 1);
 		break;
 
 	case NFTP_TYPE_GIVEME:
