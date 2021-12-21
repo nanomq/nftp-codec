@@ -24,6 +24,8 @@
 #define NFTP_TYPE_GIVEME  0x05 // TODO
 
 #define NFTP_SIZE         32
+#define NFTP_RECV_FILES   32 // Receive up to 32 files at once
+#define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 
 #ifndef DEBUG
 #define fatal(format, arg...)                                                 \
@@ -144,6 +146,11 @@ int nftp_decode(nftp *, uint8_t *, size_t);
 int nftp_encode_iovs(nftp *, nftp_iovs *);
 int nftp_encode(nftp *, uint8_t **, size_t *);
 int nftp_free(nftp *);
+
+int nftp_proto_init();
+int nftp_proto_fini();
+int nftp_proto_handler(uint8_t *, size_t, uint8_t **);
+int nftp_proto_register(char *, int (*cb)(void *), void *);
 
 #endif
 
