@@ -4,6 +4,7 @@ project(nftp-codec)
 
 option(DEBUG "This is a default option for DEBUG" ON)
 option(TEST "This is a default option for EXAMPLE" ON)
+option(HASHTABLE "This is a default option for HASHTABLE" ON)
 
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")
@@ -15,15 +16,21 @@ if(DEBUG)
   add_definitions(-DDEBUG)
 endif(DEBUG)
 
+if (HASHTABLE)
+  add_subdirectory(hashtable)
+endif()
+
 set(SOURCES 
   src/file.c
   src/hash.c
   src/iovs.c
   src/codec.c
+  src/proto.c
   src/nftp.h
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hashtable)
 
 add_library(nftp-codec ${SOURCES})
 
@@ -34,7 +41,7 @@ if(TEST)
 	  test/file.c
 	  test/iovs.c
 	  test/codec.c)
-  target_link_libraries(test nftp-codec)
+  target_link_libraries(test nftp-codec hashtable)
 endif(TEST)
 
 if(NOT DEBUG)
