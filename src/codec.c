@@ -29,9 +29,10 @@ nftp_alloc(nftp ** pp)
 	p->filename = NULL;
 	p->namelen = 0;
 	p->fileflag = 0;
+	p->hashcode = 0;
 	p->content = 0;
 	p->ctlen = 0;
-	if ((p->exbuf = malloc(sizeof(char) * 8)) == NULL) {
+	if ((p->exbuf = malloc(sizeof(char) * 10)) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
 
@@ -88,6 +89,7 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		if ((p->content = malloc(sizeof(char) * p->ctlen)) == NULL)
 			return (NFTP_ERR_MEM);
 		memcpy(p->content, v + pos, p->ctlen); pos = p->len;
+		nftp_get_u32(p->content, p->hashcode);
 		break;
 
 	case NFTP_TYPE_ACK:
@@ -135,6 +137,8 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		rv |= nftp_iovs_append(iovs, (void *)p->exbuf + 4, 2);
 		rv |= nftp_iovs_append(iovs, (void *)p->filename, p->namelen);
 
+		nftp_put_u32(p->exbuf + 6, p->hashcode);
+		p->content = p->exbuf + 6;
 		rv |= nftp_iovs_append(iovs, (void *)p->content, 4);
 		break;
 		

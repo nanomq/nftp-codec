@@ -35,6 +35,7 @@ struct nctx {
 	size_t    cap;
 	struct buf *entries;
 	uint32_t  fileflag;
+	uint32_t  hashcode;
 	struct file_cb * fcb;
 	enum NFTP_STATUS status;
 };
@@ -110,8 +111,62 @@ nftp_proto_fini()
 }
 
 int
-nftp_proto_maker(uint8_t * msg, size_t len, uint8_t ** returnmsg)
+nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 {
+	nftp * p;
+	uint8_t *v;
+	size_t len;
+
+	if (NULL == fname) {
+		return (NFTP_ERR_FILENAME);
+	}
+
+	switch (type) {
+	case NFTP_TYPE_HELLO:
+		if (0 != nftp_alloc(&p)) return (NFTP_ERR_MEM);
+
+		p->type = NFTP_TYPE_HELLO;
+		p->len = 6 + 1 + 2+strlen(fname);
+		p->id = 0;
+		p->filename = fname;
+		p->namelen = strlen(fname);
+
+		nftp_file_hash(fname, &p->hashcode);
+		break;
+
+	case NFTP_TYPE_ACK:
+		p->type = NFTP_TYPE_ACK;
+		p->len = 6 + 4;
+		p->id = 0;
+		p->fileflag = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
+		break;
+
+	case NFTP_TYPE_FILE:
+	case NFTP_TYPE_END:
+		nftp_file_read(fname, (char **)&v, &len); //TODO optimization
+		if (NFTP_BLOCK_SZ * n < len && len < NFTP_BLOCK_SZ * (n+1)) {
+			p->type = NFTP_TYPE_END;
+			p->ctlen = len - NFTP_BLOCK_SZ * n;
+		}
+		if (NFTP_BLOCK_SZ * (n+1) < len) {
+			p->type = NFTP_TYPE_FILE;
+			p->ctlen = NFTP_BLOCK_SZ;
+		}
+
+		p->len = 6 + 4 + p->ctlen + 1;
+		p->id = n+1;
+		p->fileflag = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
+		p->content = malloc(p->ctlen);
+		memcpy(p->content, v + NFTP_BLOCK_SZ*n, p->ctlen);
+		break;
+
+	case NFTP_TYPE_GIVEME:
+	default:
+		fatal("NOT SUPPORTED");
+		break;
+	}
+
+	nftp_encode(p, rmsg, rlen);
 	return (0);
 }
 
@@ -119,7 +174,7 @@ nftp_proto_maker(uint8_t * msg, size_t len, uint8_t ** returnmsg)
 // the msg is not comply with the nftp protocol, nftp will
 // ignore it.
 int
-nftp_proto_handler(uint8_t * msg, size_t len, uint8_t ** returnmsg)
+nftp_proto_handler(uint8_t * msg, size_t len)
 {
 	struct nctx * ctx;
 	nftp * n;
@@ -132,6 +187,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t ** returnmsg)
 		ctx = nctx_alloc(sizeof(uint8_t *) * n->blocks);
 		ctx->fileflag = NFTP_HASH((const uint8_t *)n->filename,
 		        strlen(n->filename));
+		ctx->hashcode = n->hashcode;
 		for (int i=0; i<fcb_cnt; ++i) {
 			if (0 == strcmp(fcb_reg[i+1]->filename, n->filename)) {
 				ctx->fcb = fcb_reg[i+1];
@@ -166,6 +222,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t ** returnmsg)
 		if (ctx->len == ctx->cap) {
 			ctx->status = NFTP_STATUS_FINISH;
 			ctx->fcb->cb(ctx->fcb->arg);
+			// TODO hash check
 
 			// Free resource
 			for (int i=0; i<ctx->cap; i++) {

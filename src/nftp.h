@@ -24,6 +24,7 @@
 #define NFTP_TYPE_GIVEME  0x05 // TODO
 
 #define NFTP_SIZE         32
+#define NFTP_BLOCK_SZ     (256 * 1024) // Maximal size of single package
 #define NFTP_RECV_FILES   32 // Receive up to 32 files at once
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 
@@ -84,6 +85,7 @@ typedef struct {
 	char *    filename;
 	uint16_t  namelen;
 	uint32_t  fileflag;
+	uint32_t  hashcode;
 	uint8_t * content;
 	size_t    ctlen;
 	uint8_t   crc;
@@ -157,8 +159,8 @@ int nftp_free(nftp *);
 
 int nftp_proto_init();
 int nftp_proto_fini();
-int nftp_proto_maker(uint8_t *, size_t, uint8_t **);
-int nftp_proto_handler(uint8_t *, size_t, uint8_t **);
+int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
+int nftp_proto_handler(uint8_t *, size_t);
 int nftp_proto_register(char *, int (*cb)(void *), void *);
 
 #endif
