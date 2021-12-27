@@ -15,18 +15,28 @@
 #include "nftp.h"
 #include "hashtable.h"
 
+struct file_cb {
+	char *filename;
+	int (*cb)(void *);
+	void *arg;
+};
+
+struct buf {
+	uint8_t * body;
+	size_t    len;
+};
+
 HashTable files;
-char **   files_reg;
-size_t    files_cnt;
+struct file_cb **fcb_reg;
+size_t    fcb_cnt;
 
 struct nctx {
 	size_t    len;
 	size_t    cap;
-	uint8_t **entries;
-	char *    filename;
+	struct buf *entries;
 	uint32_t  fileflag;
-	int     (*cb)(void *);
-	void     *arg;
+	struct file_cb * fcb;
+	enum NFTP_STATUS status;
 };
 
 static struct nctx *
@@ -37,16 +47,14 @@ nctx_alloc(size_t sz)
 	if ((n = malloc(sizeof(struct nctx))) == NULL) {
 		return NULL;
 	}
-	if ((n->entries = malloc(sizeof(void *) * sz)) == NULL) {
+	if ((n->entries = malloc(sizeof(struct buf) * sz)) == NULL) {
 		free(n);
 		return NULL;
 	}
 
 	n->len      = 0;
 	n->cap      = sz;
-	n->cb       = NULL;
-	n->arg      = NULL;
-	n->filename = NULL;
+	n->fcb      = NULL;
 
 	return n;
 }
@@ -72,9 +80,8 @@ nctx_free_cb(void *k, void *v, void *u)
 int
 nftp_proto_init()
 {
-	files_cnt = 0;
-	if ((files_reg = malloc(sizeof(char *) * (NFTP_RECV_FILES + 1))) ==
-	    NULL) {
+	fcb_cnt = 0;
+	if ((fcb_reg = malloc(sizeof(struct file_cb) * (NFTP_RECV_FILES + 1))) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
 	ht_setup(&files, sizeof(uint32_t), sizeof(struct ctx*), NFTP_RECV_FILES);
@@ -85,16 +92,26 @@ nftp_proto_init()
 int
 nftp_proto_fini()
 {
-	if (files_reg[0])
-		free(files_reg[0]);
-	for (int i=0; i<files_cnt; i++)
-		free(files_reg[i+1]);
-	free(files_reg);
+	if (fcb_reg[0]) {
+		if (fcb_reg[0]->filename) free(fcb_reg[0]->filename);
+		free(fcb_reg[0]);
+	}
+	for (int i=0; i<fcb_cnt; i++) {
+		if (fcb_reg[i+1]->filename) free(fcb_reg[i+1]->filename);
+		free(fcb_reg[i+1]);
+	}
+	free(fcb_reg);
 
 	ht_iterate(&files, NULL, nctx_free_cb);
 	ht_clear(&files);
 	ht_destroy(&files);
 
+	return (0);
+}
+
+int
+nftp_proto_maker(uint8_t * msg, size_t len, uint8_t ** returnmsg)
+{
 	return (0);
 }
 
@@ -104,8 +121,8 @@ nftp_proto_fini()
 int
 nftp_proto_handler(uint8_t * msg, size_t len, uint8_t ** returnmsg)
 {
-	nftp * n;
 	struct nctx * ctx;
+	nftp * n;
 	nftp_alloc(&n);
 
 	nftp_decode(n, msg, len);
@@ -113,15 +130,57 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t ** returnmsg)
 	switch (n->type) {
 	case NFTP_TYPE_HELLO:
 		ctx = nctx_alloc(sizeof(uint8_t *) * n->blocks);
-		ctx->filename = n->filename;
-		ctx->fileflag = NFTP_HASH((const uint8_t *)n->filename, strlen(n->filename));
+		ctx->fileflag = NFTP_HASH((const uint8_t *)n->filename,
+		        strlen(n->filename));
+		for (int i=0; i<fcb_cnt; ++i) {
+			if (0 == strcmp(fcb_reg[i+1]->filename, n->filename)) {
+				ctx->fcb = fcb_reg[i+1];
+			}
+		}
+		ht_insert(&files, &ctx->fileflag, ctx);
+		ctx->status = NFTP_STATUS_HELLO;
 		break;
 
 	case NFTP_TYPE_ACK:
+		if (!ht_contains(&files, &n->fileflag)) {
+			break;
+		}
+		ctx = (struct nctx *)ht_lookup(&files, &n->fileflag);
+		ctx->status = NFTP_STATUS_ACK;
+		break;
+
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
+		if (!ht_contains(&files, &n->fileflag)) {
+			break;
+		}
+		ctx = (struct nctx *)ht_lookup(&files, &n->fileflag);
+
+		ctx->entries[ctx->len].body = n->content;
+		ctx->entries[ctx->len].len = n->ctlen;
+		ctx->len ++;
+
+		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
+		if (n->type == NFTP_TYPE_END) ctx->status = NFTP_STATUS_END;
+
+		if (ctx->len == ctx->cap) {
+			ctx->status = NFTP_STATUS_FINISH;
+			ctx->fcb->cb(ctx->fcb->arg);
+
+			// Free resource
+			for (int i=0; i<ctx->cap; i++) {
+				nftp_file_append(ctx->fcb->filename,
+				        (char *)ctx->entries[i].body, ctx->entries[i].len);
+			}
+			free(ctx->fcb->filename);
+			free(ctx->fcb);
+			nctx_free(ctx);
+		}
+		break;
+
 	case NFTP_TYPE_GIVEME:
 	default:
+		fatal("NOT SUPPORTED");
 		break;
 	}
 
@@ -136,15 +195,25 @@ int
 nftp_proto_register(char * filename, int (*cb)(void *), void *arg)
 {
 	char * str;
+	struct file_cb * fcb;
+
+	if ((fcb = malloc(sizeof(struct file_cb))) == NULL) {
+		return (NFTP_ERR_MEM);
+	}
 	if ((str = malloc(sizeof(char) * (strlen(filename) + 1))) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
+
 	strcpy(str, filename);
-	files_reg[files_cnt+1] = str;
-	files_cnt ++;
+	fcb->filename = str;
+	fcb->cb = cb;
+	fcb->arg = arg;
 
 	if (0 == strcmp("*", filename)) {
-		files_cnt --;
+		fcb_reg[0] = fcb;
+	} else {
+		fcb_reg[fcb_cnt+1] = fcb;
+		fcb_cnt ++;
 	}
 
 	return (0);

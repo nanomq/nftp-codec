@@ -68,6 +68,14 @@ enum NFTP_FLAG {
 	NFTP_TAIL,
 };
 
+enum NFTP_STATUS {
+	NFTP_STATUS_HELLO = 0x01,
+	NFTP_STATUS_ACK,
+	NFTP_STATUS_TRANSFER,
+	NFTP_STATUS_END,
+	NFTP_STATUS_FINISH,
+};
+
 typedef struct {
 	uint8_t   type;
 	uint32_t  len;
@@ -149,6 +157,7 @@ int nftp_free(nftp *);
 
 int nftp_proto_init();
 int nftp_proto_fini();
+int nftp_proto_maker(uint8_t *, size_t, uint8_t **);
 int nftp_proto_handler(uint8_t *, size_t, uint8_t **);
 int nftp_proto_register(char *, int (*cb)(void *), void *);
 
