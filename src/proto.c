@@ -82,9 +82,10 @@ int
 nftp_proto_init()
 {
 	fcb_cnt = 0;
-	if ((fcb_reg = malloc(sizeof(struct file_cb) * (NFTP_RECV_FILES + 1))) == NULL) {
+	if ((fcb_reg = malloc(sizeof(struct file_cb *) * (NFTP_RECV_FILES + 1))) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
+	memset(fcb_reg, 0, NFTP_RECV_FILES + 1);
 	ht_setup(&files, sizeof(uint32_t), sizeof(struct ctx*), NFTP_RECV_FILES);
 
 	return (0);
@@ -98,8 +99,10 @@ nftp_proto_fini()
 		free(fcb_reg[0]);
 	}
 	for (int i=0; i<fcb_cnt; i++) {
-		if (fcb_reg[i+1]->filename) free(fcb_reg[i+1]->filename);
-		free(fcb_reg[i+1]);
+		if (fcb_reg[i+1]) {
+			if (fcb_reg[i+1]->filename) free(fcb_reg[i+1]->filename);
+			free(fcb_reg[i+1]);
+		}
 	}
 	free(fcb_reg);
 
@@ -128,6 +131,8 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		p->type = NFTP_TYPE_HELLO;
 		p->len = 6 + 1 + 2+strlen(fname);
 		p->id = 0;
+		nftp_file_size(fname, &len);
+		p->blocks = (len/NFTP_BLOCK_SZ) + 1;
 		p->filename = fname;
 		p->namelen = strlen(fname);
 

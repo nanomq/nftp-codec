@@ -40,7 +40,8 @@ if(TEST)
 	  test/hash.c
 	  test/file.c
 	  test/iovs.c
-	  test/codec.c)
+	  test/codec.c
+	  test/proto.c)
   target_link_libraries(test nftp-codec hashtable)
 endif(TEST)
 

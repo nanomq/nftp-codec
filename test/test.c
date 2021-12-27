@@ -14,4 +14,5 @@ main()
 	test_file();
 	test_iovs();
 	test_codec();
+	test_proto();
 }

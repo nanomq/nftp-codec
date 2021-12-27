@@ -131,15 +131,16 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 
 	switch (p->type) {
 	case NFTP_TYPE_HELLO:
-		rv |= nftp_iovs_append(iovs, (void *)&p->blocks, 1);
+		if (0 != nftp_iovs_append(iovs, (void *)&p->blocks, 1)) goto error;
 
 		nftp_put_u16(p->exbuf + 4, p->namelen);
-		rv |= nftp_iovs_append(iovs, (void *)p->exbuf + 4, 2);
-		rv |= nftp_iovs_append(iovs, (void *)p->filename, p->namelen);
+		if (0 != nftp_iovs_append(iovs, (void *)p->exbuf + 4, 2) ||
+		    0 != nftp_iovs_append(iovs, (void *)p->filename, p->namelen)) {
+			goto error;
+		}
 
 		nftp_put_u32(p->exbuf + 6, p->hashcode);
-		p->content = p->exbuf + 6;
-		rv |= nftp_iovs_append(iovs, (void *)p->content, 4);
+		rv |= nftp_iovs_append(iovs, (void *)p->exbuf + 6, 4);
 		break;
 		
 	case NFTP_TYPE_ACK:
@@ -151,8 +152,10 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 	case NFTP_TYPE_END:
 		if (p->id == 0) return (NFTP_ERR_ID);
 		nftp_put_u32(p->exbuf + 4, p->fileflag);
-		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
-		rv |= nftp_iovs_append(iovs, (void *)p->content, p->ctlen);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4) ||
+		    0 != nftp_iovs_append(iovs, (void *)p->content, p->ctlen)) {
+			goto error;
+		}
 
 		p->crc = nftp_crc(p->content, p->ctlen);
 		rv |= nftp_iovs_append(iovs, (void *)&p->crc, 1);
@@ -167,11 +170,12 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 	}
 	if (0 != rv) goto error;
 
-	rv |= nftp_iovs_push(iovs, (void *)&p->id, 1, NFTP_HEAD);
 	nftp_put_u32(p->exbuf, p->len);
-	rv |= nftp_iovs_push(iovs, (void *)p->exbuf, 4, NFTP_HEAD);
-	rv |= nftp_iovs_push(iovs, (void *)&p->type, 1, NFTP_HEAD);
-	if (0 != rv) goto error;
+	if (0 != nftp_iovs_push(iovs, (void *)&p->id, 1, NFTP_HEAD)   ||
+	    0 != nftp_iovs_push(iovs, (void *)p->exbuf, 4, NFTP_HEAD) ||
+	    0 != nftp_iovs_push(iovs, (void *)&p->type, 1, NFTP_HEAD)) {
+		goto error;
+	}
 
 	return (0);
 
