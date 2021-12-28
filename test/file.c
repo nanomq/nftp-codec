@@ -22,6 +22,7 @@ test_file()
 	char str2[] = "It's a demo.\nIt's a demo.\n";
 	char file[] = "./demo.txt";
 	size_t sz = 0;
+	uint32_t hashval;
 
 	if (0 == nftp_file_exist(file)) {
 		assert(0 == nftp_file_write(file, "", 0));
@@ -44,7 +45,8 @@ test_file()
 	assert(0 == strcmp(demo, str2));
 	assert(sz == strlen(str2));
 
-	// TODO nftp_file_hash
+	assert(0 == nftp_file_hash(file, &hashval));
+	assert(NFTP_HASH((uint8_t *)demo, strlen(demo)) == hashval);
 
 	free(demo);
 
