@@ -15,10 +15,12 @@
 
 #include "nftp.h"
 
-static int test_proto_make_hello();
-static int test_proto_make_ack();
-static int test_proto_make_file();
-static int test_proto_make_end();
+static int test_proto_maker();
+static int test_proto_maker_hello();
+static int test_proto_maker_ack();
+static int test_proto_maker_file();
+static int test_proto_maker_end();
+static int test_proto_handler();
 
 int
 test_proto()
@@ -26,16 +28,90 @@ test_proto()
 	log("test_proto");
 
 	assert(0 == nftp_proto_init());
-	test_proto_make_hello();
-	test_proto_make_ack();
-	test_proto_make_file();
-	test_proto_make_end();
+	test_proto_maker();
 	assert(0 == nftp_proto_fini());
+
+	assert(0 == nftp_proto_init());
+	test_proto_handler();
+	assert(0 == nftp_proto_fini());
+
+	return (0);
+}
+
+static inline int
+test_send(uint8_t *v, size_t len) {log("Send it"); v = v; len = len; return (0);}
+static inline int
+test_recv(uint8_t **vp, size_t *lenp) {log("Recv it"); vp = vp; lenp = lenp; return (0);}
+
+static inline int
+cb_proto_demo(void * arg) {log("Demo: %s", (char *)arg); return (0);}
+static inline int
+cb_proto_all(void * arg) {log("All: %s", (char *)arg); return (0);}
+
+static int
+test_proto_handler()
+{
+	char * fname = "demo.txt";
+	uint8_t * r = NULL, * s = NULL;
+	size_t rlen, slen;
+
+	// For recver
+	assert(0 == nftp_proto_register("*", cb_proto_all, (void *)"Hello."));
+	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo."));
+
+	// For sender
+	assert(0 == nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, &s, &slen));
+	assert(NULL != s);
+	assert(0 != slen);
+	test_send(s, slen);
+
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
+	// For recver
+	test_recv(&r, &rlen);
+	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
+	assert(NULL != s); // s is ACK msg
+	assert(0 != slen);
+	test_send(s, slen);
+
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
+	// For sender
+	test_recv(&r, &rlen);
+	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
+	assert(NULL != s); // s is first file msg
+	assert(0 != slen);
+	test_send(s, slen);
+
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
+	// For recver
+	test_recv(&r, &rlen);
+	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
+	assert(NULL == s); // s is first file msg
+	assert(0 == slen);
+
 	return (0);
 }
 
 static int
-test_proto_make_hello()
+test_proto_maker()
+{
+	test_proto_maker_hello();
+	test_proto_maker_ack();
+	test_proto_maker_file();
+	test_proto_maker_end();
+	return (0);
+}
+
+static int
+test_proto_maker_hello()
 {
 	uint8_t * v;
 	size_t len;
@@ -62,7 +138,7 @@ test_proto_make_hello()
 }
 
 static int
-test_proto_make_ack()
+test_proto_maker_ack()
 {
 	nftp *p;
 	uint8_t * v;
@@ -86,7 +162,7 @@ test_proto_make_ack()
 }
 
 static int
-test_proto_make_file()
+test_proto_maker_file()
 {
 	nftp *p;
 	uint8_t * v;
@@ -112,8 +188,8 @@ test_proto_make_file()
 }
 
 static int
-test_proto_make_end()
+test_proto_maker_end()
 {
-	return test_proto_make_file();
+	return test_proto_maker_file();
 }
 

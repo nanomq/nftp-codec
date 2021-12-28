@@ -25,7 +25,7 @@
 
 #define NFTP_SIZE         32
 #define NFTP_BLOCK_SZ     (256 * 1024) // Maximal size of single package
-#define NFTP_RECV_FILES   32 // Receive up to 32 files at once
+#define NFTP_FILES        32 // Receive up to 32 files at once
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 
 #ifndef DEBUG
@@ -62,6 +62,7 @@ enum NFTP_ERR {
 	NFTP_ERR_DIRTY,
 	NFTP_ERR_IOVS,
 	NFTP_ERR_STREAM,
+	NFTP_ERR_HT,
 };
 
 enum NFTP_FLAG {
@@ -160,7 +161,7 @@ int nftp_free(nftp *);
 int nftp_proto_init();
 int nftp_proto_fini();
 int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
-int nftp_proto_handler(uint8_t *, size_t);
+int nftp_proto_handler(uint8_t *, size_t, uint8_t **, size_t *);
 int nftp_proto_register(char *, int (*cb)(void *), void *);
 
 #endif
