@@ -43,6 +43,9 @@ test_file()
 	assert(0 == nftp_file_read(file, &demo, &sz));
 	assert(0 == strcmp(demo, str2));
 	assert(sz == strlen(str2));
+
+	// TODO nftp_file_hash
+
 	free(demo);
 
 	return (0);

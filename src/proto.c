@@ -116,6 +116,7 @@ nftp_proto_fini()
 int
 nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 {
+	int rv;
 	nftp * p;
 	uint8_t *v;
 	size_t len;
@@ -124,14 +125,14 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		return (NFTP_ERR_FILENAME);
 	}
 
+	if (0 != (rv = nftp_alloc(&p))) return rv;
+
 	switch (type) {
 	case NFTP_TYPE_HELLO:
-		if (0 != nftp_alloc(&p)) return (NFTP_ERR_MEM);
-
 		p->type = NFTP_TYPE_HELLO;
-		p->len = 6 + 1 + 2+strlen(fname);
+		p->len = 6 + 1 + 2+strlen(fname) + 4;
 		p->id = 0;
-		nftp_file_size(fname, &len);
+		if (0 != (rv = nftp_file_size(fname, &len))) return rv;
 		p->blocks = (len/NFTP_BLOCK_SZ) + 1;
 		p->filename = fname;
 		p->namelen = strlen(fname);
@@ -163,6 +164,7 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		p->fileflag = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		p->content = malloc(p->ctlen);
 		memcpy(p->content, v + NFTP_BLOCK_SZ*n, p->ctlen);
+		free(v);
 		break;
 
 	case NFTP_TYPE_GIVEME:
@@ -171,7 +173,10 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		break;
 	}
 
-	nftp_encode(p, rmsg, rlen);
+	if (0 != (rv = nftp_encode(p, rmsg, rlen))) return rv;
+
+	p->filename = NULL; // Avoid free in nftp_free by mistake
+	nftp_free(p);
 	return (0);
 }
 

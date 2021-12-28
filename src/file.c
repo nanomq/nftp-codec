@@ -136,7 +136,7 @@ nftp_file_hash(char *fname, uint32_t *hashval)
 	}
 
 	while ((fgets(txt, sz, fp)) != NULL) {
-		for (pos = 0; pos < sz; ++pos) {
+		for (pos = 0; pos < strlen(txt); ++pos) {
 			res = 33 * res ^ (uint8_t) txt[pos];
 		}
 	}
