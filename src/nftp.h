@@ -70,6 +70,11 @@ enum NFTP_FLAG {
 	NFTP_TAIL,
 };
 
+enum NFTP_CLIENT_TYPE {
+	NFTP_SENDER = 0x01,
+	NFTP_RECVER,
+};
+
 enum NFTP_STATUS {
 	NFTP_STATUS_HELLO = 0x01,
 	NFTP_STATUS_ACK,
@@ -160,10 +165,11 @@ int nftp_free(nftp *);
 
 int nftp_proto_init();
 int nftp_proto_fini();
-int nftp_proto_start(char *, int (*cb)(void *), void *);
+int nftp_proto_send_start(char *, uint8_t **, size_t *);
+int nftp_proto_send_end(char *);
 int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
 int nftp_proto_handler(uint8_t *, size_t, uint8_t **, size_t *);
-int nftp_proto_register(char *, int (*cb)(void *), void *);
+int nftp_proto_register(char *, int (*cb)(void *), void *, int);
 
 #endif
 
