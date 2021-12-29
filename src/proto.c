@@ -127,26 +127,34 @@ nftp_proto_fini()
 }
 
 int
-nftp_proto_send_start(char *fname, uint8_t ** hello_msgp, size_t * lenp)
-{
-	if (NULL == fname) return (NFTP_ERR_FILENAME);
-
-	nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, hello_msgp, lenp);
-	nftp_proto_register(fname, NULL, NULL, NFTP_SENDER);
-
-	return (0);
-}
-
-int
-nftp_proto_send_end(char *fname)
+nftp_proto_send_start(char *fname)
 {
 	if (NULL == fname) return (NFTP_ERR_FILENAME);
 
 	for (int i = 0; i < fcb_cnt4s; ++i) {
 		if (0 == strcmp(fname, fcb_reg4s[i+1]->filename)) {
-			if (fcb_reg4s[i+1]->filename) free(fcb_reg4s[i+1]->filename);
+			return (0);
+		}
+	}
+
+	fatal("Call register first.");
+	return (NFTP_ERR_PROTO);
+}
+
+int
+nftp_proto_send_stop(char *fname)
+{
+	if (NULL == fname) return (NFTP_ERR_FILENAME);
+
+	for (int i = 0; i < fcb_cnt4s; ++i) {
+		if (0 == strcmp(fname, fcb_reg4s[i+1]->filename)) {
+			fcb_reg4s[i + 1]->cb(fcb_reg4s[i + 1]->arg); // cb
+
+			if (fcb_reg4s[i+1]->filename)
+				free(fcb_reg4s[i+1]->filename);
 			free(fcb_reg4s[i+1]);
 			fcb_reg4s[i+1] = NULL;
+			fcb_cnt4s --;
 		}
 	}
 
@@ -216,6 +224,10 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 
 	if (0 != (rv = nftp_encode(p, rmsg, rlen))) return rv;
 
+	if (NFTP_TYPE_END == p->type) {
+		nftp_proto_send_stop(fname);
+	}
+
 	p->filename = NULL; // Avoid free in nftp_free by mistake
 	nftp_free(p);
 	return (0);
@@ -227,7 +239,7 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 int
 nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 {
-	int rv;
+	int rv = 1;
 	struct nctx * ctx = NULL;
 	nftp * n;
 	nftp_alloc(&n);
@@ -260,9 +272,10 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		for (int i=0; i<fcb_cnt4s; ++i) {
 			char * str = fcb_reg4s[i+1]->filename;
 			if (n->fileflag == NFTP_HASH((uint8_t *)str, strlen(str))) {
-				nftp_proto_maker(str, NFTP_TYPE_FILE, 0, retmsg, rlen);
+				rv = 0;
 			}
 		}
+		if (rv != 0) return (NFTP_ERR_EMPTY);
 		break;
 
 	case NFTP_TYPE_FILE:

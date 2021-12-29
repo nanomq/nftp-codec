@@ -112,6 +112,7 @@ uint8_t  nftp_crc(uint8_t *, size_t);
 
 int nftp_file_exist(char *);
 int nftp_file_size(char *, size_t *);
+int nftp_file_blocks(char *, size_t *);
 int nftp_file_read(char *, char **, size_t *);
 int nftp_file_write(char *, char *, size_t);
 int nftp_file_append(char *, char *, size_t);
@@ -165,8 +166,8 @@ int nftp_free(nftp *);
 
 int nftp_proto_init();
 int nftp_proto_fini();
-int nftp_proto_send_start(char *, uint8_t **, size_t *);
-int nftp_proto_send_end(char *);
+int nftp_proto_send_start(char *);
+int nftp_proto_send_stop(char *);
 int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
 int nftp_proto_handler(uint8_t *, size_t, uint8_t **, size_t *);
 int nftp_proto_register(char *, int (*cb)(void *), void *, int);

@@ -55,14 +55,16 @@ test_proto_handler()
 {
 	char * fname = "demo.txt";
 	uint8_t * r = NULL, * s = NULL;
-	size_t rlen, slen;
-
-	// For recver
-	assert(0 == nftp_proto_register("*", cb_proto_all, (void *)"Hello.", NFTP_RECVER));
-	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo.", NFTP_RECVER));
+	size_t rlen, slen, blocks;
 
 	// For sender
-	assert(0 == nftp_proto_send_start(fname, &s, &slen));
+	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'am demo send.", NFTP_SENDER));
+	// For recver
+	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv.", NFTP_RECVER));
+
+	// For sender
+	assert(0 == nftp_proto_send_start(fname));
+	nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, &s, &slen);
 	assert(NULL != s);
 	assert(0 != slen);
 	test_send("HELLO", s, slen);
@@ -86,15 +88,22 @@ test_proto_handler()
 	// For sender
 	test_recv("ACK", &r, &rlen);
 	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
-	assert(NULL != s); // s is first (also last) file msg
-	assert(0 != slen);
-	test_send("END", s, slen);
-	assert(0 == nftp_proto_send_end(fname));
-
+	assert(NULL == s);
+	assert(0 == slen);
 	free(r);
-	// Transfer
-	r = s; rlen = slen;
-	s = NULL; slen = 0;
+
+	// File blocks transferring
+	if (s == NULL && slen == 0) {
+		assert(0 == nftp_file_blocks(fname, &blocks));
+		for (int i=0; i<blocks; ++i) {
+			assert(0 == nftp_proto_maker(fname, NFTP_TYPE_FILE, i, &s, &slen));
+			test_send("END", s, slen);
+			// Transfer
+			r = s; rlen = slen;
+			s = NULL; slen = 0;
+		}
+	}
+	assert(0 == nftp_proto_send_stop(fname));
 
 	// For recver
 	test_recv("END", &r, &rlen);

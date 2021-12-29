@@ -38,6 +38,21 @@ nftp_file_size(char *fname, size_t *sz)
 }
 
 int
+nftp_file_blocks(char *fname, size_t *blocks)
+{
+	int rv;
+	size_t sz;
+
+	if (0 != (rv = nftp_file_size(fname, &sz))) {
+		return rv;
+	}
+
+	*blocks = sz/NFTP_BLOCK_SZ + 1;
+	return (0);
+}
+
+
+int
 nftp_file_read(char *fname, char **strp, size_t *sz)
 {
 	FILE * fp;
