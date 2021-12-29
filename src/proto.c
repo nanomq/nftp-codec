@@ -29,6 +29,8 @@ struct buf {
 HashTable        files;
 struct file_cb **fcb_reg;
 size_t           fcb_cnt;
+struct file_cb **fcb_reg4s;
+size_t           fcb_cnt4s;
 
 struct nctx {
 	size_t          len;
@@ -86,7 +88,14 @@ nftp_proto_init()
 		return (NFTP_ERR_MEM);
 	}
 	memset(fcb_reg, 0, NFTP_FILES + 1);
-	ht_setup(&files, sizeof(uint32_t), sizeof(struct ctx*), NFTP_FILES);
+
+	fcb_cnt4s = 0;
+	if ((fcb_reg4s = malloc(sizeof(struct file_cb *) * (NFTP_FILES + 1))) == NULL) {
+		return (NFTP_ERR_MEM);
+	}
+	memset(fcb_reg4s, 0, NFTP_FILES + 1);
+
+	ht_setup(&files, sizeof(uint32_t), sizeof(struct nctx*), NFTP_FILES);
 
 	return (0);
 }
@@ -106,9 +115,41 @@ nftp_proto_fini()
 	}
 	free(fcb_reg);
 
+	for (int i=0; i<fcb_cnt4s; i++) {
+		if (fcb_reg4s[i]) {
+			if (fcb_reg4s[i]->filename) free(fcb_reg4s[i]->filename);
+			free(fcb_reg4s[i]);
+		}
+	}
+	free(fcb_reg4s);
+
 	ht_iterate(&files, NULL, nctx_free_cb);
 	ht_clear(&files);
 	ht_destroy(&files);
+
+	return (0);
+}
+
+int
+nftp_proto_start(char *fname, int (*cb)(void *), void * arg)
+{
+	// uint8_t * hello_msg;
+	// size_t len;
+	struct file_cb * fcb;
+
+	if (NULL == fname) return (NFTP_ERR_FILENAME);
+	// nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, &hello_msg, &len);
+
+	if ((fcb = malloc(sizeof(struct file_cb))) == NULL) {
+		return (NFTP_ERR_MEM);
+	}
+	fcb->cb = cb;
+	fcb->arg = arg;
+
+	fcb->filename = malloc(sizeof(char) * (strlen(fname)+1));
+	strcpy(fcb->filename, fname);
+
+	fcb_reg4s[fcb_cnt4s++] = fcb;
 
 	return (0);
 }
@@ -120,7 +161,6 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	nftp * p;
 	uint8_t *v;
 	size_t len;
-	struct nctx * ctx;
 
 	if (NULL == fname) {
 		return (NFTP_ERR_FILENAME);
@@ -139,10 +179,6 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		p->namelen = strlen(fname);
 
 		nftp_file_hash(fname, &p->hashcode);
-
-		ctx = nctx_alloc(sizeof(uint8_t *) * 1);
-		ctx->fileflag = NFTP_HASH((const uint8_t *)fname, strlen(fname));
-
 		break;
 
 	case NFTP_TYPE_ACK:
@@ -204,7 +240,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 
 	switch (n->type) {
 	case NFTP_TYPE_HELLO:
-		ctx = nctx_alloc(sizeof(uint8_t *) * n->blocks);
+		ctx = nctx_alloc(n->blocks);
 		ctx->fileflag = NFTP_HASH((const uint8_t *)n->filename,
 		        strlen(n->filename));
 		ctx->hashcode = n->hashcode;
@@ -213,15 +249,20 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				ctx->fcb = fcb_reg[i+1];
 			}
 		}
-		ht_insert(&files, &ctx->fileflag, ctx);
+		ht_insert(&files, &ctx->fileflag, &ctx);
 		ctx->status = NFTP_STATUS_HELLO;
 
 		nftp_proto_maker(n->filename, NFTP_TYPE_ACK, 0, retmsg, rlen);
 		break;
 
 	case NFTP_TYPE_ACK:
-		ctx->fileflag = n->fileflag;
-		nftp_proto_maker(n->filename, NFTP_TYPE_FILE, 0, retmsg, rlen);
+		// TODO optimization for calculate
+		for (int i=0; i<fcb_cnt4s; ++i) {
+			char * str = fcb_reg4s[i]->filename;
+			if (n->fileflag == NFTP_HASH((uint8_t *)str, strlen(str))) {
+				nftp_proto_maker(str, NFTP_TYPE_FILE, 0, retmsg, rlen);
+			}
+		}
 		break;
 
 	case NFTP_TYPE_FILE:
@@ -229,12 +270,12 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		if (!ht_contains(&files, &n->fileflag)) {
 			break;
 		}
-		if ((ctx = (struct nctx *)ht_lookup(&files, &n->fileflag)) == NULL) {
+		if ((ctx = *((struct nctx **)ht_lookup(&files, &n->fileflag))) == NULL) {
 			return NFTP_ERR_HT;
 		}
 
-		ctx->entries[ctx->len].body = n->content;
 		ctx->entries[ctx->len].len = n->ctlen;
+		ctx->entries[ctx->len].body = n->content;
 		ctx->len ++;
 
 		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
@@ -250,8 +291,14 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				nftp_file_append(ctx->fcb->filename,
 				        (char *)ctx->entries[i].body, ctx->entries[i].len);
 			}
+
+			for (int i=0; i<fcb_cnt; ++i)
+				if (ctx->fcb == fcb_reg[i+1])
+					fcb_reg[i+1] = NULL;
 			free(ctx->fcb->filename);
 			free(ctx->fcb);
+
+			ht_erase(&files, &ctx->fileflag);
 			nctx_free(ctx);
 		}
 		break;
@@ -261,6 +308,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		fatal("NOT SUPPORTED");
 		break;
 	}
+	nftp_free(n);
 
 	return (0);
 }

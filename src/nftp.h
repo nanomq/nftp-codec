@@ -160,6 +160,7 @@ int nftp_free(nftp *);
 
 int nftp_proto_init();
 int nftp_proto_fini();
+int nftp_proto_start(char *, int (*cb)(void *), void *);
 int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
 int nftp_proto_handler(uint8_t *, size_t, uint8_t **, size_t *);
 int nftp_proto_register(char *, int (*cb)(void *), void *);
