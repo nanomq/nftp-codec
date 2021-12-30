@@ -25,7 +25,7 @@ static int test_codec_giveme(); // TODO
 int
 test_codec()
 {
-	log("test_codec");
+	nftp_log("test_codec");
 	test_codec_hello();
 	test_codec_ack();
 	test_codec_file();

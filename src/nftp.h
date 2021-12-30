@@ -29,14 +29,14 @@
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 
 #ifndef DEBUG
-#define fatal(format, arg...)                                                 \
+#define nftp_fatal(format, arg...)                                                 \
 	do {                                                                  \
 		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, ##arg);                                     \
 	} while (0)
 #else
 // Only EXIT in DEBUG MODE
-#define fatal(format, arg...)                                                 \
+#define nftp_fatal(format, arg...)                                                 \
 	do {                                                                  \
 		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, ##arg);                                     \
@@ -44,7 +44,7 @@
 	} while (0)
 #endif
 
-#define log(format, arg...)                                           \
+#define nftp_log(format, arg...)                                           \
 	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
 	    __FUNCTION__, ##arg)
 

@@ -15,7 +15,7 @@
 int
 test_hash()
 {
-	log("test_hash");
+	nftp_log("test_hash");
 	assert(nftp_djb_hashn((uint8_t *) "asdfghjkl", 9) ==
 	    nftp_djb_hashn((uint8_t *) "asdfghjkl", 9));
 	assert(nftp_fnv1a_hashn((uint8_t *) "asdfghjkl", 9) ==

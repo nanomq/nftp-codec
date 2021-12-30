@@ -25,7 +25,7 @@ nftp_file_size(char *fname, size_t *sz)
 	size_t filesize;
 
 	if ((fp = fopen(fname, "r")) == NULL) {
-		fatal("open error");
+		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
 
@@ -61,7 +61,7 @@ nftp_file_read(char *fname, char **strp, size_t *sz)
 	size_t filesize;
 
 	if ((fp = fopen(fname, "r")) == NULL) {
-		fatal("open error");
+		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
 
@@ -89,7 +89,7 @@ nftp_file_write(char * fname, char * str, size_t sz)
 	size_t filesize;
 
 	if ((fp = fopen(fname, "w")) == NULL) {
-		fatal("open error");
+		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
 
@@ -109,7 +109,7 @@ nftp_file_append(char * fname, char * str, size_t sz)
 	int    filesize;
 
 	if ((fp = fopen(fname, "a")) == NULL) {
-		fatal("open error");
+		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
 
@@ -128,7 +128,7 @@ nftp_file_clear(char * fname)
 	FILE * fp;
 
 	if ((fp = fopen(fname, "w")) == NULL) {
-		fatal("open error");
+		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
 
@@ -146,7 +146,7 @@ nftp_file_hash(char *fname, uint32_t *hashval)
 	uint32_t res = 5381;
 
 	if ((fp = fopen(fname, "r")) == NULL) {
-		fatal("read error");
+		nftp_fatal("read error");
 		return (NFTP_ERR_FILE);
 	}
 

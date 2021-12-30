@@ -25,7 +25,7 @@ static int test_proto_handler();
 int
 test_proto()
 {
-	log("test_proto");
+	nftp_log("test_proto");
 
 	assert(0 == nftp_proto_init());
 	test_proto_maker();
@@ -40,15 +40,15 @@ test_proto()
 
 static inline int
 test_send(char *s, uint8_t *v, size_t len) {
-	log("%s", s); v = v; len = len; return (0);}
+	nftp_log("%s", s); v = v; len = len; return (0);}
 static inline int
 test_recv(char *s, uint8_t **vp, size_t *lenp) {
-	log("%s", s); vp = vp; lenp = lenp; return (0);}
+	nftp_log("%s", s); vp = vp; lenp = lenp; return (0);}
 
 static inline int
-cb_proto_demo(void * arg) {log("Demo: %s", (char *)arg); return (0);}
+cb_proto_demo(void * arg) {nftp_log("Demo: %s", (char *)arg); return (0);}
 static inline int
-cb_proto_all(void * arg) {log("All: %s", (char *)arg); return (0);}
+cb_proto_all(void * arg) {nftp_log("All: %s", (char *)arg); return (0);}
 
 static int
 test_proto_handler()

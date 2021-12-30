@@ -137,7 +137,7 @@ nftp_proto_send_start(char *fname)
 		}
 	}
 
-	fatal("Call register first.");
+	nftp_fatal("Call register first.");
 	return (NFTP_ERR_PROTO);
 }
 
@@ -218,7 +218,7 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 
 	case NFTP_TYPE_GIVEME:
 	default:
-		fatal("NOT SUPPORTED");
+		nftp_fatal("NOT SUPPORTED");
 		break;
 	}
 
@@ -318,7 +318,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 
 	case NFTP_TYPE_GIVEME:
 	default:
-		fatal("NOT SUPPORTED");
+		nftp_fatal("NOT SUPPORTED");
 		break;
 	}
 	nftp_free(n);

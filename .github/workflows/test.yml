@@ -19,7 +19,7 @@ jobs:
               run: |
                   mkdir -p build
                   cd build
-                  cmake -DDEBUG=ON ..
+                  cmake -DDEBUG=ON -DTEST=ON ..
                   make
 
             - name: nftp test

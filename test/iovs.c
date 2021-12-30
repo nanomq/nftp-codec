@@ -15,7 +15,7 @@
 int
 test_iovs()
 {
-	log("test_iovs");
+	nftp_log("test_iovs");
 	nftp_iovs *iovs;
 	nftp_iovs *iovs1;
 	char *     str  = "bacdef";

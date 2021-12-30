@@ -111,10 +111,10 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		break;
 
 	case NFTP_TYPE_GIVEME: // TODO
-		fatal("NOT SUPPORTED");
+		nftp_fatal("NOT SUPPORTED");
 		return (NFTP_ERR_PROTO);
 	default:
-		fatal("UNDEFINED TYPE PACKET");
+		nftp_fatal("UNDEFINED TYPE PACKET");
 		return (NFTP_ERR_PROTO);
 	}
 	return (0);
@@ -162,10 +162,10 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		break;
 
 	case NFTP_TYPE_GIVEME:
-		fatal("NOT SUPPORTED");
+		nftp_fatal("NOT SUPPORTED");
 		return (NFTP_ERR_PROTO);
 	default:
-		fatal("UNDEFINED TYPE PACKET");
+		nftp_fatal("UNDEFINED TYPE PACKET");
 		return (NFTP_ERR_PROTO);
 	}
 	if (0 != rv) goto error;
