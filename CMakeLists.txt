@@ -2,23 +2,13 @@ cmake_minimum_required(VERSION 3.13)
 
 project(nftp-codec)
 
-option(DEBUG "This is a default option for DEBUG" ON)
-option(TEST "This is a default option for EXAMPLE" ON)
-option(HASHTABLE "This is a default option for HASHTABLE" ON)
-
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")
-  if(APPLE)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -fsanitize=address")
-  else()
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -g -fsanitize=address -fsanitize=leak")
-  endif()
   add_definitions(-DDEBUG)
 endif(DEBUG)
 
-if (HASHTABLE)
-  add_subdirectory(hashtable)
-endif()
+add_subdirectory(hashtable)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hashtable)
 
 set(SOURCES 
   src/file.c
@@ -30,9 +20,9 @@ set(SOURCES
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hashtable)
 
-add_library(nftp-codec ${SOURCES})
+add_library(nftp-codec SHARED ${SOURCES})
+add_library(nftp-codec-static STATIC ${SOURCES})
 
 if(TEST)
   add_executable(test
