@@ -113,6 +113,7 @@ uint8_t  nftp_crc(uint8_t *, size_t);
 int nftp_file_exist(char *);
 int nftp_file_size(char *, size_t *);
 int nftp_file_blocks(char *, size_t *);
+int nftp_file_readblk(char *, int, char **, size_t *);
 int nftp_file_read(char *, char **, size_t *);
 int nftp_file_write(char *, char *, size_t);
 int nftp_file_append(char *, char *, size_t);

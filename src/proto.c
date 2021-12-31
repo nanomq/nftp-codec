@@ -169,6 +169,7 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	nftp * p;
 	uint8_t *v;
 	size_t len;
+	size_t blocks;
 
 	if (NULL == fname) {
 		return (NFTP_ERR_FILENAME);
@@ -198,22 +199,23 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		nftp_file_read(fname, (char **)&v, &len); //TODO optimization
-		if (NFTP_BLOCK_SZ * n < len && len < NFTP_BLOCK_SZ * (n+1)) {
-			p->type = NFTP_TYPE_END;
-			p->ctlen = len - NFTP_BLOCK_SZ * n;
+		if (0 != (rv = nftp_file_readblk(fname, n, (char **)&v, &len))) {
+			return rv;
 		}
-		if (NFTP_BLOCK_SZ * (n+1) < len) {
+		if (0 != (rv = nftp_file_blocks(fname, &blocks))) {
+			return rv;
+		}
+		if (n == blocks-1) {
+			p->type = NFTP_TYPE_END;
+		} else {
 			p->type = NFTP_TYPE_FILE;
-			p->ctlen = NFTP_BLOCK_SZ;
 		}
 
+		p->content = v;
+		p->ctlen = len;
 		p->len = 6 + 4 + p->ctlen + 1;
 		p->id = n+1;
 		p->fileflag = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
-		p->content = malloc(p->ctlen);
-		memcpy(p->content, v + NFTP_BLOCK_SZ*n, p->ctlen);
-		free(v);
 		break;
 
 	case NFTP_TYPE_GIVEME:
