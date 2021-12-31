@@ -308,8 +308,10 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			}
 
 			for (int i=0; i<fcb_cnt; ++i)
-				if (ctx->fcb == fcb_reg[i+1])
+				if (ctx->fcb == fcb_reg[i+1]) {
 					fcb_reg[i+1] = NULL;
+					fcb_cnt --;
+				}
 			free(ctx->fcb->filename);
 			free(ctx->fcb);
 
