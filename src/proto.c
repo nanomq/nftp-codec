@@ -298,7 +298,12 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 
 		if (ctx->len == ctx->cap) {
 			ctx->status = NFTP_STATUS_FINISH;
-			ctx->fcb->cb(ctx->fcb->arg);
+			if (NULL == ctx->fcb) {
+				nftp_fatal("Unregistered filename.");
+				break;
+			}
+			if (ctx->fcb->cb)
+				ctx->fcb->cb(ctx->fcb->arg);
 			// TODO hash check
 
 			// Free resource
