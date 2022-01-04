@@ -75,7 +75,7 @@ nftp_file_readblk(char *fname, int n, char **strp, size_t *sz)
 		blksz = NFTP_BLOCK_SZ;
 	}
 
-	fseek(fp, 0, n*NFTP_BLOCK_SZ);
+	fseek(fp, n*NFTP_BLOCK_SZ, SEEK_SET);
 
 	str = (char *) malloc(blksz + 1);
 	memset(str, '\0', blksz + 1);
@@ -87,7 +87,7 @@ nftp_file_readblk(char *fname, int n, char **strp, size_t *sz)
 
 	fclose(fp);
 	*strp = str;
-	*sz   = filesize;
+	*sz   = blksz;
 	return (0);
 }
 
