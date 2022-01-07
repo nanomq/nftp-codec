@@ -7,10 +7,20 @@
 //
 //
 
-#include <unistd.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "nftp.h"
+
+#ifdef _WIN32
+#define F_OK 0
+
+inline int access(const char *pathname, int mode) {
+	return _access(pathname, mode);
+}
+#else
+#include <unistd.h>
+#endif
 
 int
 nftp_file_exist(char *fname)
@@ -180,7 +190,7 @@ nftp_file_hash(char *fname, uint32_t *hashval)
 {
 	FILE *   fp;
 	size_t   sz = 1000;
-	char     txt[sz];
+	char     txt[1000];
 	int      pos;
 	uint32_t res = 5381;
 

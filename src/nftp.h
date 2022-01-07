@@ -28,6 +28,23 @@
 #define NFTP_FILES        32 // Receive up to 32 files at once
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 
+#ifdef _WIN32
+#ifndef DEBUG
+#define nftp_fatal(format, ...)                                                 \
+	do {                                                                  \
+		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, __VA_ARGS__);                                     \
+	} while (0)
+#else
+// Only EXIT in DEBUG MODE
+#define nftp_fatal(format, ...)                                                 \
+	do {                                                                  \
+		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, __VA_ARGS__);                                     \
+		exit(0);                                                      \
+	} while (0)
+#endif
+#else
 #ifndef DEBUG
 #define nftp_fatal(format, arg...)                                                 \
 	do {                                                                  \
@@ -43,10 +60,17 @@
 		exit(0);                                                      \
 	} while (0)
 #endif
+#endif
 
+#ifdef _WIN32
+#define nftp_log(format, ...)                                           \
+	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+	    __FUNCTION__, __VA_ARGS__)
+#else
 #define nftp_log(format, arg...)                                           \
 	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
 	    __FUNCTION__, ##arg)
+#endif
 
 enum NFTP_ERR {
 	NFTP_ERR_HASH = 0x01,

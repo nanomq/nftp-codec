@@ -134,15 +134,15 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		if (0 != nftp_iovs_append(iovs, (void *)&p->blocks, 1)) goto error;
 
 		nftp_put_u16(p->exbuf + 4, p->namelen);
-		if (0 != nftp_iovs_append(iovs, (void *)p->exbuf + 4, 2) ||
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
 		    0 != nftp_iovs_append(iovs, (void *)p->filename, p->namelen)) {
 			goto error;
 		}
 
 		nftp_put_u32(p->exbuf + 6, p->hashcode);
-		rv |= nftp_iovs_append(iovs, (void *)p->exbuf + 6, 4);
+		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 6), 4);
 		break;
-		
+
 	case NFTP_TYPE_ACK:
 		nftp_put_u32(p->exbuf + 4, p->fileflag);
 		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);

@@ -15,6 +15,10 @@
 #include "nftp.h"
 #include "hashtable.h"
 
+#ifdef _WIN32
+#pragma comment(lib, "hashtable-static.lib")
+#endif
+
 struct file_cb {
 	char *filename;
 	int (*cb)(void *);

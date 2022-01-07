@@ -9,7 +9,15 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+struct iovec {
+	void * iov_base;
+	size_t iov_len;
+};
+#else
 #include <sys/uio.h>
+#endif
 
 #include "nftp.h"
 
