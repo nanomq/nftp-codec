@@ -262,15 +262,25 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		ctx->fileflag = NFTP_HASH((const uint8_t *)n->filename,
 		        strlen(n->filename));
 		ctx->hashcode = n->hashcode;
+
 		for (int i=0; i<fcb_cnt; ++i) {
 			if (0 == strcmp(fcb_reg[i+1]->filename, n->filename)) {
 				ctx->fcb = fcb_reg[i+1];
 			}
 		}
 		if (NULL == ctx->fcb) {
+			nftp_log("Unregistered filename [%s]\n", n->filename);
 			nftp_proto_register(n->filename, fcb_reg[0]->cb,
 					fcb_reg[0]->arg, NFTP_RECVER);
 		}
+
+		// TODO Optimization
+		for (int i=0; i<fcb_cnt; ++i) {
+			if (0 == strcmp(fcb_reg[i+1]->filename, n->filename)) {
+				ctx->fcb = fcb_reg[i+1];
+			}
+		}
+
 		ht_insert(&files, &ctx->fileflag, &ctx);
 		ctx->status = NFTP_STATUS_HELLO;
 
@@ -291,6 +301,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (!ht_contains(&files, &n->fileflag)) {
+			nftp_log("Not found fileflag [%d]", n->fileflag);
 			break;
 		}
 		if ((ctx = *((struct nctx **)ht_lookup(&files, &n->fileflag))) == NULL) {
@@ -300,6 +311,8 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		ctx->entries[ctx->len].len = n->ctlen;
 		ctx->entries[ctx->len].body = n->content;
 		ctx->len ++;
+		nftp_log("Process(recv) [%s]:[%ld/%ld]\n",
+			ctx->fcb->filename, ctx->len, ctx->cap);
 
 		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
 		if (n->type == NFTP_TYPE_END) ctx->status = NFTP_STATUS_END;
@@ -314,12 +327,14 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				ctx->fcb->cb(ctx->fcb->arg);
 			// TODO hash check
 
-			// Free resource
+			// TODO Optimization Write to file
+			nftp_file_clear(ctx->fcb->filename);
 			for (int i=0; i<ctx->cap; i++) {
 				nftp_file_append(ctx->fcb->filename,
 				        (char *)ctx->entries[i].body, ctx->entries[i].len);
 			}
 
+			// Free resource
 			for (int i=0; i<fcb_cnt; ++i)
 				if (ctx->fcb == fcb_reg[i+1]) {
 					fcb_reg[i+1] = NULL;
