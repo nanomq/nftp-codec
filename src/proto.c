@@ -267,6 +267,10 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				ctx->fcb = fcb_reg[i+1];
 			}
 		}
+		if (NULL == ctx->fcb) {
+			nftp_proto_register(n->filename, fcb_reg[0]->cb,
+					fcb_reg[0]->arg, NFTP_RECVER);
+		}
 		ht_insert(&files, &ctx->fileflag, &ctx);
 		ctx->status = NFTP_STATUS_HELLO;
 
