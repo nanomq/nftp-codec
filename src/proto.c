@@ -39,10 +39,12 @@ size_t           fcb_cnt4s;
 struct nctx {
 	size_t          len;
 	size_t          cap;
+	size_t          nextid;
 	struct buf *    entries;
 	uint32_t        fileflag;
 	uint32_t        hashcode;
 	struct file_cb *fcb;
+	char *          wfname;
 	uint8_t         status;
 };
 
@@ -58,9 +60,15 @@ nctx_alloc(size_t sz)
 		free(n);
 		return NULL;
 	}
+	for (int i=0; i<sz; ++i) {
+		n->entries[i].len = 0;
+		n->entries[i].body = NULL;
+	}
 
 	n->len      = 0;
 	n->cap      = sz;
+	n->nextid   = 1;
+	n->wfname   = NULL;
 	n->fcb      = NULL;
 
 	return n;
@@ -69,8 +77,14 @@ nctx_alloc(size_t sz)
 static void
 nctx_free(struct nctx * n) {
 	if (!n) return;
-	if (n->entries)
+	if (n->entries) {
+		for (int i=0; i<n->cap; i++)
+			if (n->entries[i].body != NULL)
+				free(n->entries[i].body);
 		free(n->entries);
+	}
+	if (n->wfname)
+		free(n->wfname);
 	free(n);
 }
 
@@ -249,6 +263,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	struct nctx * ctx = NULL;
 	nftp * n;
 	nftp_alloc(&n);
+	char   partname[NFTP_FNAME_LEN + 8];
 
 	// Set default return value
 	*retmsg = NULL;
@@ -280,6 +295,16 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				ctx->fcb = fcb_reg[i+1];
 			}
 		}
+		
+		if (nftp_file_exist(n->filename)) {
+			nftp_file_newname(n->filename, &ctx->wfname);
+			nftp_log("File [%s] exists, recver would save to [%s]", n->filename, ctx->wfname);
+			nftp_file_partname(ctx->wfname, partname);
+			nftp_file_write(partname, "", 0); // create file
+		} else {
+			ctx->wfname = malloc(sizeof(char) * strlen(n->filename));
+			strcpy(ctx->wfname, n->filename);
+		}
 
 		ht_insert(&files, &ctx->fileflag, &ctx);
 		ctx->status = NFTP_STATUS_HELLO;
@@ -307,18 +332,49 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		if ((ctx = *((struct nctx **)ht_lookup(&files, &n->fileflag))) == NULL) {
 			return NFTP_ERR_HT;
 		}
+		nftp_file_partname(ctx->wfname, partname);
 
-		ctx->entries[ctx->len].len = n->ctlen;
-		ctx->entries[ctx->len].body = n->content;
+		if (n->id == ctx->nextid) {
+			if (0 != nftp_file_append(partname, n->content, n->ctlen)) {
+				return (NFTP_ERR_FILE);
+			}
+			do {
+				ctx->nextid ++;
+				if ((ctx->nextid > ctx->cap-1) ||
+				    (ctx->entries[ctx->nextid].body == NULL))
+					break;
+				if (0 != nftp_file_append(partname,
+				        ctx->entries[ctx->nextid].body,
+				        ctx->entries[ctx->nextid].len)) {
+					return (NFTP_ERR_FILE);
+				}
+				free(ctx->entries[ctx->nextid].body);
+				ctx->entries[ctx->nextid].body = NULL;
+				ctx->entries[ctx->nextid].len  = 0;
+			} while (1);
+		} else {
+			// Just store it
+			ctx->entries[n->id].len = n->ctlen;
+			ctx->entries[n->id].body = n->content;
+			n->content = NULL; // avoid be free
+		}
+
 		ctx->len ++;
 		nftp_log("Process(recv) [%s]:[%ld/%ld]\n",
-			ctx->fcb->filename, ctx->len, ctx->cap);
+			ctx->wfname, ctx->len, ctx->cap);
 
 		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
 		if (n->type == NFTP_TYPE_END) ctx->status = NFTP_STATUS_END;
 
+		// Recved finished
 		if (ctx->len == ctx->cap) {
 			ctx->status = NFTP_STATUS_FINISH;
+			// Rename
+			if (0 != nftp_file_rename(partname, ctx->wfname)) {
+				return (NFTP_ERR_FILE);
+			}
+
+			// Run cb
 			if (NULL == ctx->fcb) {
 				nftp_fatal("Unregistered filename.");
 				break;
@@ -326,13 +382,6 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			if (ctx->fcb->cb)
 				ctx->fcb->cb(ctx->fcb->arg);
 			// TODO hash check
-
-			// TODO Optimization Write to file
-			nftp_file_clear(ctx->fcb->filename);
-			for (int i=0; i<ctx->cap; i++) {
-				nftp_file_append(ctx->fcb->filename,
-				        (char *)ctx->entries[i].body, ctx->entries[i].len);
-			}
 
 			// Free resource
 			for (int i=0; i<fcb_cnt; ++i)

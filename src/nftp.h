@@ -27,6 +27,7 @@
 #define NFTP_BLOCK_SZ     (256 * 1024) // Maximal size of single package
 #define NFTP_FILES        32 // Receive up to 32 files at once
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
+#define NFTP_FNAME_LEN    64
 
 #ifdef _WIN32
 #ifndef DEBUG
@@ -122,6 +123,12 @@ typedef struct {
 	uint8_t * exbuf;
 } nftp;
 
+#define nftp_file_partname(fname, buf)                \
+	do {                                          \
+		strcpy(buf, fname);                   \
+		strcpy(buf + strlen(fname), ".part"); \
+	} while (0);
+
 #define nftp_set(nftp, key, val)                                 \
 	do {                                                           \
 		if (offsetof(nftp, crc) == offsetof(nftp, key)) {      \
@@ -136,7 +143,7 @@ uint8_t  nftp_crc(uint8_t *, size_t);
 
 int nftp_file_exist(char *);
 int nftp_file_newname(char *, char **);
-int nftp_file_rename(char *, char **);
+int nftp_file_rename(char *, char *);
 int nftp_file_size(char *, size_t *);
 int nftp_file_blocks(char *, size_t *);
 int nftp_file_readblk(char *, int, char **, size_t *);
