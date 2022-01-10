@@ -135,6 +135,8 @@ uint32_t nftp_fnv1a_hashn(const uint8_t *, size_t);
 uint8_t  nftp_crc(uint8_t *, size_t);
 
 int nftp_file_exist(char *);
+int nftp_file_newname(char *, char **);
+int nftp_file_rename(char *, char **);
 int nftp_file_size(char *, size_t *);
 int nftp_file_blocks(char *, size_t *);
 int nftp_file_readblk(char *, int, char **, size_t *);

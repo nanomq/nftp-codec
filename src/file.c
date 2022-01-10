@@ -29,6 +29,39 @@ nftp_file_exist(char *fname)
 }
 
 int
+nftp_file_newname(char *fname, char **newnamep)
+{
+	char * newname;
+	int len = strlen(fname);
+
+	if ((newname = malloc(sizeof(char) * (len+3))) == NULL) {
+		return (NFTP_ERR_MEM);
+	}
+
+	strcpy(newname, fname);
+	newname[len] = '_';
+	newname[len+2] = '\0';
+
+	// Retry up to 10 times if filename unavailable
+	for (int i = 1; i < 10; ++i) {
+		newname[len+1] = '0' + i;
+		if (0 == nftp_file_exist(newname)) {
+			*newnamep = newname;
+			return (0);
+		}
+	}
+
+	*newnamep = NULL;
+	return (NFTP_ERR_FILENAME);
+}
+
+int
+nftp_file_rename(char *sfname, char *dfname)
+{
+	return rename(sfname, dfname);
+}
+
+int
 nftp_file_size(char *fname, size_t *sz)
 {
 	FILE * fp;

@@ -20,14 +20,19 @@ test_file()
 	char * demo;
 	char str[] = "It's a demo.\n";
 	char str2[] = "It's a demo.\nIt's a demo.\n";
-	char file[] = "./demo.txt";
+	char file[] = "demo.txt";
 	size_t sz = 0;
 	uint32_t hashval;
+	char *newfname;
 
 	if (0 == nftp_file_exist(file)) {
 		assert(0 == nftp_file_write(file, "", 0));
 	}
 	assert(0 == nftp_file_clear(file));
+
+	assert(0 == nftp_file_newname(file, &newfname));
+	assert(0 == strcmp("demo.txt_1", newfname));
+	free(newfname);
 
 	assert(0 == nftp_file_read(file, &demo, &sz));
 	assert(0 == strcmp(demo, ""));
