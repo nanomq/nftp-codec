@@ -105,6 +105,8 @@ nftp_iovs_push(nftp_iovs *iovs, void *ptr, size_t len, int flag)
 		}
 
 		iov = &iovs->iovs[iovs->low + iovs->len];
+	} else {
+		return (NFTP_ERR_FLAG);
 	}
 	iov->iov_base = ptr;
 	iov->iov_len  = len;
@@ -128,6 +130,8 @@ nftp_iovs_pop(nftp_iovs *iovs, void **ptrp, size_t *lenp, int flag)
 		iovs->low++;
 	} else if (flag == NFTP_TAIL) {
 		iov = &iovs->iovs[iovs->low + iovs->len - 1];
+	} else {
+		return (NFTP_ERR_FLAG);
 	}
 
 	*ptrp         = iov->iov_base;
