@@ -372,18 +372,18 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			ctx->status = NFTP_STATUS_FINISH;
 			// Rename
 			if (0 != nftp_file_rename(partname, ctx->wfname)) {
-				nftp_fatal("Error happened in file rename.");
+				nftp_fatal("Error happened in file rename [%s].", partname);
 				return (NFTP_ERR_FILE);
 			}
 			// hash check
 			if (0 != nftp_file_hash(ctx->wfname, &hashcode)) {
-				nftp_fatal("Error happened in file hash.");
+				nftp_fatal("Error happened in file hash [%s].", ctx->wfname);
 				return (NFTP_ERR_FILE);
 			} else {
-				nftp_log("Hash check passed.");
+				nftp_log("Hash check passed [%s].", ctx->wfname);
 			}
 			if (ctx->hashcode != hashcode) {
-				nftp_fatal("Error happened in recving.");
+				nftp_fatal("Error happened in recving [%s].", ctx->wfname);
 			}
 
 			// Run cb

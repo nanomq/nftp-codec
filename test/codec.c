@@ -19,8 +19,7 @@ static int test_codec_hello();
 static int test_codec_ack();
 static int test_codec_file();
 static int test_codec_end();
-
-static int test_codec_giveme(); // TODO
+static int test_codec_giveme();
 
 int
 test_codec()
@@ -173,6 +172,33 @@ test_codec_end()
 static int
 test_codec_giveme()
 {
+	nftp * p;
+	size_t len;
+	uint8_t *v;
+
+	uint8_t demo1_giveme[] = {
+		0x05, 0x00, 0x00, 0x00, 0x0c, 0x02, // type & length & id
+		0x00, 0x04, 0x61, 0x62, 0x2e, 0x63, // file "ab.c"
+	};
+
+	assert(0 == nftp_alloc(&p));
+
+	assert(0 == nftp_decode(p, demo1_giveme, 12));
+
+	assert(NFTP_TYPE_GIVEME == p->type);
+	assert(12 == p->len);
+	assert(2 == p->id);
+	assert(0 == strcmp("ab.c", p->filename));
+	assert(4 == p->namelen);
+
+	assert(0 == nftp_encode(p, &v, &len));
+	assert(12 == len);
+	for (int i=0; i<len; i++) {
+		assert(demo1_giveme[i] == v[i]);
+	}
+
+	assert(0 == nftp_free(p));
+	free(v);
 	return (0);
 }
 

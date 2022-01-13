@@ -112,9 +112,16 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 			return (NFTP_ERR_STREAM);
 		break;
 
-	case NFTP_TYPE_GIVEME: // TODO
-		nftp_fatal("NOT SUPPORTED");
-		return (NFTP_ERR_PROTO);
+	case NFTP_TYPE_GIVEME:
+		if (p->id == 0) return (NFTP_ERR_ID);
+		nftp_get_u16(v + pos, p->namelen); pos += 2;
+
+		if ((p->filename = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
+			return (NFTP_ERR_MEM);
+		memcpy(p->filename, v + pos, p->namelen); pos += p->namelen;
+		p->filename[p->namelen] = '\0';
+		break;
+
 	default:
 		nftp_fatal("UNDEFINED TYPE PACKET");
 		return (NFTP_ERR_PROTO);
@@ -164,8 +171,15 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		break;
 
 	case NFTP_TYPE_GIVEME:
-		nftp_fatal("NOT SUPPORTED");
-		return (NFTP_ERR_PROTO);
+		if (p->id == 0) return (NFTP_ERR_ID);
+
+		nftp_put_u16(p->exbuf + 4, p->namelen);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
+		    0 != nftp_iovs_append(iovs, (void *)p->filename, p->namelen)) {
+			goto error;
+		}
+		break;
+
 	default:
 		nftp_fatal("UNDEFINED TYPE PACKET");
 		return (NFTP_ERR_PROTO);

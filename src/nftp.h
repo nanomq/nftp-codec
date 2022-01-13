@@ -20,8 +20,7 @@
 #define NFTP_TYPE_ACK     0x02
 #define NFTP_TYPE_FILE    0x03
 #define NFTP_TYPE_END     0x04
-
-#define NFTP_TYPE_GIVEME  0x05 // TODO
+#define NFTP_TYPE_GIVEME  0x05
 
 #define NFTP_SIZE         32
 #define NFTP_BLOCK_SZ     (256 * 1024) // Maximal size of single package
