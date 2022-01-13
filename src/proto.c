@@ -261,6 +261,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 {
 	int rv = 1;
 	struct nctx * ctx = NULL;
+	uint32_t hashcode = 0;
 	nftp * n;
 	nftp_alloc(&n);
 	char   partname[NFTP_FNAME_LEN + 8];
@@ -371,17 +372,27 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			ctx->status = NFTP_STATUS_FINISH;
 			// Rename
 			if (0 != nftp_file_rename(partname, ctx->wfname)) {
+				nftp_fatal("Error happened in file rename.");
 				return (NFTP_ERR_FILE);
+			}
+			// hash check
+			if (0 != nftp_file_hash(ctx->wfname, &hashcode)) {
+				nftp_fatal("Error happened in file hash.");
+				return (NFTP_ERR_FILE);
+			} else {
+				nftp_log("Hash check passed.");
+			}
+			if (ctx->hashcode != hashcode) {
+				nftp_fatal("Error happened in recving.");
 			}
 
 			// Run cb
 			if (NULL == ctx->fcb) {
-				nftp_fatal("Unregistered filename.");
+				nftp_log("Unregistered.");
 				break;
 			}
 			if (ctx->fcb->cb)
 				ctx->fcb->cb(ctx->fcb->arg);
-			// TODO hash check
 
 			// Free resource
 			for (int i=0; i<fcb_cnt; ++i)

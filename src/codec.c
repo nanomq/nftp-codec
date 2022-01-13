@@ -108,6 +108,8 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		memcpy(p->content, v + pos, p->ctlen); pos = p->len;
 
 		p->crc = *(v + pos - 1);
+		if (p->crc != nftp_crc(p->content, p->ctlen))
+			return (NFTP_ERR_STREAM);
 		break;
 
 	case NFTP_TYPE_GIVEME: // TODO
