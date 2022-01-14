@@ -172,7 +172,8 @@ nftp_proto_send_stop(char *fpath)
 	for (int i = 0; i < fcb_cnt4s; ++i) {
 		if (0 == strcmp(fname, fcb_reg4s[i+1]->fname)) {
 			// run callback
-			fcb_reg4s[i + 1]->cb(fcb_reg4s[i + 1]->arg);
+			if (fcb_reg4s[i + 1]->cb)
+				fcb_reg4s[i + 1]->cb(fcb_reg4s[i + 1]->arg);
 
 			free(fcb_reg4s[i+1]->fname);
 			free(fcb_reg4s[i+1]);
@@ -393,6 +394,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			}
 			if (ctx->hashcode != hashcode) {
 				nftp_fatal("Error happened in recving [%s].", ctx->wfname);
+				return (NFTP_ERR_FILE);
 			}
 
 			// Run cb
