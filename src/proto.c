@@ -155,8 +155,8 @@ nftp_proto_send_start(char *fname)
 		}
 	}
 
-	nftp_fatal("Call register first.");
-	return (NFTP_ERR_PROTO);
+	nftp_proto_register(fname, NULL, NULL, NFTP_SENDER);
+	return (0);
 }
 
 int
@@ -166,10 +166,10 @@ nftp_proto_send_stop(char *fname)
 
 	for (int i = 0; i < fcb_cnt4s; ++i) {
 		if (0 == strcmp(fname, fcb_reg4s[i+1]->filename)) {
-			fcb_reg4s[i + 1]->cb(fcb_reg4s[i + 1]->arg); // cb
+			// run callback
+			fcb_reg4s[i + 1]->cb(fcb_reg4s[i + 1]->arg);
 
-			if (fcb_reg4s[i+1]->filename)
-				free(fcb_reg4s[i+1]->filename);
+			free(fcb_reg4s[i+1]->filename);
 			free(fcb_reg4s[i+1]);
 			fcb_reg4s[i+1] = NULL;
 			fcb_cnt4s --;
