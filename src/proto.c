@@ -312,9 +312,10 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			nftp_file_partname(ctx->wfname, partname);
 			nftp_file_write(partname, "", 0); // create file
 		} else {
-			if ((ctx->wfname = strdup(n->fname)) == NULL) {
+			if ((ctx->wfname = malloc(n->namelen)+1) == NULL) {
 				return (NFTP_ERR_MEM);
 			}
+			strcpy(ctx->wfname, n->fname);
 		}
 
 		ht_insert(&files, &ctx->fileflag, &ctx);
@@ -446,9 +447,10 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg, int cli)
 	fcb->cb = cb;
 	fcb->arg = arg;
 
-	if ((fcb->fname = strdup(fname)) == NULL) {
+	if ((fcb->fname = malloc(strlen(fname)+1)) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
+	strcpy(fcb->fname, fname);
 
 	if (0 == strcmp("*", fname)) {
 		if      (NFTP_RECVER == cli) fcb_reg[0]   = fcb;
