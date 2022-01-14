@@ -20,12 +20,47 @@ inline int access(const char *pathname, int mode) {
 }
 #else
 #include <unistd.h>
+#include <libgen.h>
 #endif
 
-int
-nftp_file_exist(char *fname)
+char *
+nftp_file_path(char *fpath)
 {
-	return (access(fname, F_OK) == 0);
+	char * dir;
+#ifdef _WIN32
+	dirc = malloc(sizeof(char) * 256);
+	_splitpath_s(fpath,
+		NULL, 0,            // Don't need drive
+		dir, sizeof(dir),   // Just the directory
+		NULL, 0,            // Don't need filename
+		NULL, 0);
+#else
+	dir = strdup(dirname(fpath));
+#endif
+	return dir;
+}
+
+char *
+nftp_file_bname(char *fpath)
+{
+	char * bname;
+#ifdef _WIN32
+	bname = malloc(sizeof(char) * NFTP_FNAME_LEN);
+	_splitpath_s(fpath,
+		NULL, 0,    // Don't need drive
+		NULL, 0,    // Don't need directory
+		bname, sizeof(bname),  // just the filename
+		NULL, 0);
+#else
+	bname = strdup(basename(fpath));
+#endif
+	return bname;
+}
+
+int
+nftp_file_exist(char *fpath)
+{
+	return (access(fpath, F_OK) == 0);
 }
 
 int
@@ -55,18 +90,18 @@ nftp_file_newname(char *fname, char **newnamep)
 }
 
 int
-nftp_file_rename(char *sfname, char *dfname)
+nftp_file_rename(char *sfpath, char *dfpath)
 {
-	return rename(sfname, dfname);
+	return rename(sfpath, dfpath);
 }
 
 int
-nftp_file_size(char *fname, size_t *sz)
+nftp_file_size(char *fpath, size_t *sz)
 {
 	FILE * fp;
 	size_t filesize;
 
-	if ((fp = fopen(fname, "r")) == NULL) {
+	if ((fp = fopen(fpath, "r")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -80,12 +115,12 @@ nftp_file_size(char *fname, size_t *sz)
 }
 
 int
-nftp_file_blocks(char *fname, size_t *blocks)
+nftp_file_blocks(char *fpath, size_t *blocks)
 {
 	int rv;
 	size_t sz;
 
-	if (0 != (rv = nftp_file_size(fname, &sz))) {
+	if (0 != (rv = nftp_file_size(fpath, &sz))) {
 		return rv;
 	}
 
@@ -94,14 +129,14 @@ nftp_file_blocks(char *fname, size_t *blocks)
 }
 
 int
-nftp_file_readblk(char *fname, int n, char **strp, size_t *sz)
+nftp_file_readblk(char *fpath, int n, char **strp, size_t *sz)
 {
 	FILE * fp;
 	char * str;
 	size_t filesize;
 	size_t blksz;
 
-	if ((fp = fopen(fname, "r")) == NULL) {
+	if ((fp = fopen(fpath, "r")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -134,14 +169,14 @@ nftp_file_readblk(char *fname, int n, char **strp, size_t *sz)
 }
 
 int
-nftp_file_read(char *fname, char **strp, size_t *sz)
+nftp_file_read(char *fpath, char **strp, size_t *sz)
 {
 	FILE * fp;
 	char * str;
 	char   txt[1000];
 	size_t filesize;
 
-	if ((fp = fopen(fname, "r")) == NULL) {
+	if ((fp = fopen(fpath, "r")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -164,12 +199,12 @@ nftp_file_read(char *fname, char **strp, size_t *sz)
 }
 
 int
-nftp_file_write(char * fname, char * str, size_t sz)
+nftp_file_write(char * fpath, char * str, size_t sz)
 {
 	FILE * fp;
 	size_t filesize;
 
-	if ((fp = fopen(fname, "w")) == NULL) {
+	if ((fp = fopen(fpath, "w")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -184,12 +219,12 @@ nftp_file_write(char * fname, char * str, size_t sz)
 }
 
 int
-nftp_file_append(char * fname, char * str, size_t sz)
+nftp_file_append(char * fpath, char * str, size_t sz)
 {
 	FILE * fp;
 	int    filesize;
 
-	if ((fp = fopen(fname, "a")) == NULL) {
+	if ((fp = fopen(fpath, "a")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -204,11 +239,11 @@ nftp_file_append(char * fname, char * str, size_t sz)
 }
 
 int
-nftp_file_clear(char * fname)
+nftp_file_clear(char * fpath)
 {
 	FILE * fp;
 
-	if ((fp = fopen(fname, "w")) == NULL) {
+	if ((fp = fopen(fpath, "w")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -218,7 +253,7 @@ nftp_file_clear(char * fname)
 }
 
 int
-nftp_file_hash(char *fname, uint32_t *hashval)
+nftp_file_hash(char *fpath, uint32_t *hashval)
 {
 	FILE *   fp;
 	size_t   sz = 1000;
@@ -226,7 +261,7 @@ nftp_file_hash(char *fname, uint32_t *hashval)
 	int      pos;
 	uint32_t res = 5381;
 
-	if ((fp = fopen(fname, "r")) == NULL) {
+	if ((fp = fopen(fpath, "r")) == NULL) {
 		nftp_fatal("read error");
 		return (NFTP_ERR_FILE);
 	}

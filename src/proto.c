@@ -20,7 +20,7 @@
 #endif
 
 struct file_cb {
-	char *filename;
+	char *fname;
 	int (*cb)(void *);
 	void *arg;
 };
@@ -123,7 +123,7 @@ nftp_proto_fini()
 {
 	for (int i=0; i<fcb_cnt+1; i++) {
 		if (fcb_reg[i]) {
-			if (fcb_reg[i]->filename) free(fcb_reg[i]->filename);
+			if (fcb_reg[i]->fname) free(fcb_reg[i]->fname);
 			free(fcb_reg[i]);
 		}
 	}
@@ -131,7 +131,7 @@ nftp_proto_fini()
 
 	for (int i=0; i<fcb_cnt4s+1; i++) {
 		if (fcb_reg4s[i]) {
-			if (fcb_reg4s[i]->filename) free(fcb_reg4s[i]->filename);
+			if (fcb_reg4s[i]->fname) free(fcb_reg4s[i]->fname);
 			free(fcb_reg4s[i]);
 		}
 	}
@@ -145,53 +145,60 @@ nftp_proto_fini()
 }
 
 int
-nftp_proto_send_start(char *fname)
+nftp_proto_send_start(char *fpath)
 {
-	if (NULL == fname) return (NFTP_ERR_FILENAME);
+	char * fname;
+	if (NULL == fpath) return (NFTP_ERR_FILEPATH);
+	fname = nftp_file_bname(fpath);
 
 	for (int i = 0; i < fcb_cnt4s; ++i) {
-		if (0 == strcmp(fname, fcb_reg4s[i+1]->filename)) {
+		if (0 == strcmp(fname, fcb_reg4s[i+1]->fname)) {
 			return (0);
 		}
 	}
 
 	nftp_proto_register(fname, NULL, NULL, NFTP_SENDER);
+	free(fname);
 	return (0);
 }
 
 int
-nftp_proto_send_stop(char *fname)
+nftp_proto_send_stop(char *fpath)
 {
-	if (NULL == fname) return (NFTP_ERR_FILENAME);
+	char * fname;
+	if (NULL == fpath) return (NFTP_ERR_FILEPATH);
+	fname = nftp_file_bname(fpath);
 
 	for (int i = 0; i < fcb_cnt4s; ++i) {
-		if (0 == strcmp(fname, fcb_reg4s[i+1]->filename)) {
+		if (0 == strcmp(fname, fcb_reg4s[i+1]->fname)) {
 			// run callback
 			fcb_reg4s[i + 1]->cb(fcb_reg4s[i + 1]->arg);
 
-			free(fcb_reg4s[i+1]->filename);
+			free(fcb_reg4s[i+1]->fname);
 			free(fcb_reg4s[i+1]);
 			fcb_reg4s[i+1] = NULL;
 			fcb_cnt4s --;
 		}
 	}
 
+	free(fname);
 	return (0);
 }
 
 
 int
-nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
+nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 {
 	int rv;
 	nftp * p;
 	uint8_t *v;
-	size_t len;
-	size_t blocks;
+	size_t len, blocks;
+	char * fname;
 
-	if (NULL == fname) {
-		return (NFTP_ERR_FILENAME);
+	if (NULL == fpath) {
+		return (NFTP_ERR_FILEPATH);
 	}
+	fname = nftp_file_bname(fpath);
 
 	if (0 != (rv = nftp_alloc(&p))) return rv;
 
@@ -200,12 +207,12 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		p->type = NFTP_TYPE_HELLO;
 		p->len = 6 + 1 + 2+strlen(fname) + 4;
 		p->id = 0;
-		if (0 != (rv = nftp_file_size(fname, &len))) return rv;
+		if (0 != (rv = nftp_file_size(fpath, &len))) return rv;
 		p->blocks = (len/NFTP_BLOCK_SZ) + 1;
-		p->filename = fname;
+		p->fname = fname;
 		p->namelen = strlen(fname);
 
-		nftp_file_hash(fname, &p->hashcode);
+		nftp_file_hash(fpath, &p->hashcode);
 		break;
 
 	case NFTP_TYPE_ACK:
@@ -217,10 +224,10 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		if (0 != (rv = nftp_file_readblk(fname, n, (char **)&v, &len))) {
+		if (0 != (rv = nftp_file_readblk(fpath, n, (char **)&v, &len))) {
 			return rv;
 		}
-		if (0 != (rv = nftp_file_blocks(fname, &blocks))) {
+		if (0 != (rv = nftp_file_blocks(fpath, &blocks))) {
 			return rv;
 		}
 		if (n == blocks-1) {
@@ -245,11 +252,12 @@ nftp_proto_maker(char *fname, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	if (0 != (rv = nftp_encode(p, rmsg, rlen))) return rv;
 
 	if (NFTP_TYPE_END == p->type) {
-		nftp_proto_send_stop(fname);
+		nftp_proto_send_stop(fpath);
 	}
 
-	p->filename = NULL; // Avoid free in nftp_free by mistake
+	p->fname = NULL; // Avoid free in nftp_free by mistake
 	nftp_free(p);
+	free(fname);
 	return (0);
 }
 
@@ -263,8 +271,8 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	struct nctx * ctx = NULL;
 	uint32_t hashcode = 0;
 	nftp * n;
-	nftp_alloc(&n);
 	char   partname[NFTP_FNAME_LEN + 8];
+	nftp_alloc(&n);
 
 	// Set default return value
 	*retmsg = NULL;
@@ -275,48 +283,49 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	switch (n->type) {
 	case NFTP_TYPE_HELLO:
 		ctx = nctx_alloc(n->blocks);
-		ctx->fileflag = NFTP_HASH((const uint8_t *)n->filename,
-		        strlen(n->filename));
+		ctx->fileflag = NFTP_HASH((const uint8_t *)n->fname,
+		        strlen(n->fname));
 		ctx->hashcode = n->hashcode;
 
 		for (int i=0; i<fcb_cnt; ++i) {
-			if (0 == strcmp(fcb_reg[i+1]->filename, n->filename)) {
+			if (0 == strcmp(fcb_reg[i+1]->fname, n->fname)) {
 				ctx->fcb = fcb_reg[i+1];
 			}
 		}
 		if (NULL == ctx->fcb) {
-			nftp_log("Unregistered filename [%s]\n", n->filename);
-			nftp_proto_register(n->filename, fcb_reg[0]->cb,
+			nftp_log("Unregistered filename [%s]\n", n->fname);
+			nftp_proto_register(n->fname, fcb_reg[0]->cb,
 					fcb_reg[0]->arg, NFTP_RECVER);
 		}
 
 		// TODO Optimization
 		for (int i=0; i<fcb_cnt; ++i) {
-			if (0 == strcmp(fcb_reg[i+1]->filename, n->filename)) {
+			if (0 == strcmp(fcb_reg[i+1]->fname, n->fname)) {
 				ctx->fcb = fcb_reg[i+1];
 			}
 		}
 		
-		if (nftp_file_exist(n->filename)) {
-			nftp_file_newname(n->filename, &ctx->wfname);
-			nftp_log("File [%s] exists, recver would save to [%s]", n->filename, ctx->wfname);
+		if (nftp_file_exist(n->fname)) {
+			nftp_file_newname(n->fname, &ctx->wfname);
+			nftp_log("File [%s] exists, recver would save to [%s]", n->fname, ctx->wfname);
 			nftp_file_partname(ctx->wfname, partname);
 			nftp_file_write(partname, "", 0); // create file
 		} else {
-			ctx->wfname = malloc(sizeof(char) * strlen(n->filename));
-			strcpy(ctx->wfname, n->filename);
+			if ((ctx->wfname = strdup(n->fname)) == NULL) {
+				return (NFTP_ERR_MEM);
+			}
 		}
 
 		ht_insert(&files, &ctx->fileflag, &ctx);
 		ctx->status = NFTP_STATUS_HELLO;
 
-		nftp_proto_maker(n->filename, NFTP_TYPE_ACK, 0, retmsg, rlen);
+		nftp_proto_maker(n->fname, NFTP_TYPE_ACK, 0, retmsg, rlen);
 		break;
 
 	case NFTP_TYPE_ACK:
 		// TODO optimization for calculate
 		for (int i=0; i<fcb_cnt4s; ++i) {
-			char * str = fcb_reg4s[i+1]->filename;
+			char * str = fcb_reg4s[i+1]->fname;
 			if (n->fileflag == NFTP_HASH((uint8_t *)str, strlen(str))) {
 				rv = 0;
 			}
@@ -400,7 +409,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 					fcb_reg[i+1] = NULL;
 					fcb_cnt --;
 				}
-			free(ctx->fcb->filename);
+			free(ctx->fcb->fname);
 			free(ctx->fcb);
 
 			ht_erase(&files, &ctx->fileflag);
@@ -435,10 +444,9 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg, int cli)
 	fcb->cb = cb;
 	fcb->arg = arg;
 
-	if ((fcb->filename = malloc(sizeof(char) * (strlen(fname)+1))) == NULL) {
+	if ((fcb->fname = strdup(fname)) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
-	strcpy(fcb->filename, fname);
 
 	if (0 == strcmp("*", fname)) {
 		if      (NFTP_RECVER == cli) fcb_reg[0]   = fcb;

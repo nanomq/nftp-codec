@@ -26,7 +26,8 @@ nftp_alloc(nftp ** pp)
 	p->type = 0x00;
 	p->id = 0;
 	p->blocks = 0;
-	p->filename = NULL;
+	p->fpath = NULL;
+	p->fname = NULL;
 	p->namelen = 0;
 	p->fileflag = 0;
 	p->hashcode = 0;
@@ -80,10 +81,10 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		p->blocks = (int) *(v + pos); ++pos;
 		nftp_get_u16(v + pos, p->namelen); pos += 2;
 
-		if ((p->filename = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
+		if ((p->fname = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
 			return (NFTP_ERR_MEM);
-		memcpy(p->filename, v + pos, p->namelen); pos += p->namelen;
-		p->filename[p->namelen] = '\0';
+		memcpy(p->fname, v + pos, p->namelen); pos += p->namelen;
+		p->fname[p->namelen] = '\0';
 
 		p->ctlen = p->len - pos;
 		if ((p->content = malloc(sizeof(char) * p->ctlen)) == NULL)
@@ -116,10 +117,10 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		if (p->id == 0) return (NFTP_ERR_ID);
 		nftp_get_u16(v + pos, p->namelen); pos += 2;
 
-		if ((p->filename = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
+		if ((p->fname = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
 			return (NFTP_ERR_MEM);
-		memcpy(p->filename, v + pos, p->namelen); pos += p->namelen;
-		p->filename[p->namelen] = '\0';
+		memcpy(p->fname, v + pos, p->namelen); pos += p->namelen;
+		p->fname[p->namelen] = '\0';
 		break;
 
 	default:
@@ -144,7 +145,7 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 
 		nftp_put_u16(p->exbuf + 4, p->namelen);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
-		    0 != nftp_iovs_append(iovs, (void *)p->filename, p->namelen)) {
+		    0 != nftp_iovs_append(iovs, (void *)p->fname, p->namelen)) {
 			goto error;
 		}
 
@@ -175,7 +176,7 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 
 		nftp_put_u16(p->exbuf + 4, p->namelen);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
-		    0 != nftp_iovs_append(iovs, (void *)p->filename, p->namelen)) {
+		    0 != nftp_iovs_append(iovs, (void *)p->fname, p->namelen)) {
 			goto error;
 		}
 		break;
@@ -229,8 +230,11 @@ nftp_free(nftp * p)
 		return (NFTP_ERR_EMPTY);
 	}
 
-	if (p->filename) {
-		free(p->filename);
+	if (p->fpath) {
+		free(p->fpath);
+	}
+	if (p->fname) {
+		free(p->fname);
 	}
 	if (p->content) {
 		free(p->content);

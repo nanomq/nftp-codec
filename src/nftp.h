@@ -74,6 +74,7 @@
 
 enum NFTP_ERR {
 	NFTP_ERR_HASH = 0x01,
+	NFTP_ERR_FILEPATH,
 	NFTP_ERR_FILENAME,
 	NFTP_ERR_BLOCKS,
 	NFTP_ERR_ID,
@@ -113,7 +114,8 @@ typedef struct {
 	uint32_t  len;
 	uint8_t   id;
 	uint8_t   blocks;
-	char *    filename;
+	char *    fpath;
+	char *    fname;
 	uint16_t  namelen;
 	uint32_t  fileflag;
 	uint32_t  hashcode;
@@ -129,17 +131,12 @@ typedef struct {
 		strcpy(buf + strlen(fname), ".part"); \
 	} while (0);
 
-#define nftp_set(nftp, key, val)                                 \
-	do {                                                           \
-		if (offsetof(nftp, crc) == offsetof(nftp, key)) {      \
-			fatal("Macro is not supported for CRC Field"); \
-		}                                                      \
-		nftp->key = val;                                       \
-	} while (0)
-
 uint32_t nftp_djb_hashn(const uint8_t *, size_t);
 uint32_t nftp_fnv1a_hashn(const uint8_t *, size_t);
 uint8_t  nftp_crc(uint8_t *, size_t);
+
+char * nftp_file_bname(char *);
+char * nftp_file_path(char *);
 
 int nftp_file_exist(char *);
 int nftp_file_newname(char *, char **);
@@ -151,7 +148,7 @@ int nftp_file_read(char *, char **, size_t *);
 int nftp_file_write(char *, char *, size_t);
 int nftp_file_append(char *, char *, size_t);
 int nftp_file_clear(char *);
-int nftp_file_hash(char *fname, uint32_t *);
+int nftp_file_hash(char *, uint32_t *);
 
 typedef struct nftp_iovs nftp_iovs;
 

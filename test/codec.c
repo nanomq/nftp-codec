@@ -54,7 +54,7 @@ test_codec_hello()
 	assert(17 == p->len);
 	assert(0 == p->id);
 	assert(3 == p->blocks);
-	assert(0 == strcmp("ab.c", p->filename));
+	assert(0 == strcmp("ab.c", p->fname));
 	assert(4 == p->namelen);
 
 	assert(0 == nftp_encode(p, &v, &len));
@@ -188,7 +188,7 @@ test_codec_giveme()
 	assert(NFTP_TYPE_GIVEME == p->type);
 	assert(12 == p->len);
 	assert(2 == p->id);
-	assert(0 == strcmp("ab.c", p->filename));
+	assert(0 == strcmp("ab.c", p->fname));
 	assert(4 == p->namelen);
 
 	assert(0 == nftp_encode(p, &v, &len));
