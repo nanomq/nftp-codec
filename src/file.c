@@ -34,17 +34,16 @@ nftp_file_newname(char *fname, char **newnamep)
 	char * newname;
 	int len = strlen(fname);
 
-	if ((newname = malloc(sizeof(char) * (len+3))) == NULL) {
+	if ((newname = malloc(sizeof(char) * (len+4))) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
 
 	strcpy(newname, fname);
-	newname[len] = '_';
-	newname[len+2] = '\0';
+	strcpy(newname+len, "_00");
 
-	// Retry up to 10 times if filename unavailable
-	for (int i = 1; i < 10; ++i) {
-		newname[len+1] = '0' + i;
+	// Retry up to 100 times if filename unreachable
+	for (int i = 1; i < 100; ++i) {
+		sprintf(newname+len, "_%02d", i);
 		if (0 == nftp_file_exist(newname)) {
 			*newnamep = newname;
 			return (0);
