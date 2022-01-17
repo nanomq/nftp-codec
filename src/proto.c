@@ -310,8 +310,9 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				ctx->fcb = fcb_reg[i+1];
 			}
 		}
-		
-		if (nftp_file_exist(n->fname)) {
+
+		nftp_file_fullpath(fullpath, recvdir, n->fname);
+		if (nftp_file_exist(fullpath)) {
 			nftp_file_newname(n->fname, &ctx->wfname);
 			nftp_log("File [%s] exists, recver would save to [%s]", n->fname, ctx->wfname);
 			nftp_file_partname(partname, ctx->wfname);
@@ -395,11 +396,11 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				return (NFTP_ERR_FILE);
 			}
 			// hash check
-			if (0 != nftp_file_hash(ctx->wfname, &hashcode)) {
-				nftp_fatal("Error happened in file hash [%s].", ctx->wfname);
+			if (0 != nftp_file_hash(fullpath2, &hashcode)) {
+				nftp_fatal("Error happened in file hash [%s].", fullpath2);
 				return (NFTP_ERR_FILE);
 			} else {
-				nftp_log("Hash check passed [%s].", ctx->wfname);
+				nftp_log("Hash check passed [%s].", fullpath2);
 			}
 			if (ctx->hashcode != hashcode) {
 				nftp_fatal("Error happened in recving [%s].", ctx->wfname);

@@ -61,6 +61,7 @@ test_proto_handler()
 	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'am demo send.", NFTP_SENDER));
 	// For recver
 	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv.", NFTP_RECVER));
+	assert(0 == nftp_set_recvdir("./build/"));
 
 	// For sender
 	assert(0 == nftp_proto_send_start(fname));
@@ -110,6 +111,7 @@ test_proto_handler()
 	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
 	assert(NULL == s); // s is first (also last) file msg
 	assert(0 == slen);
+	assert(1 == nftp_file_exist("./build/demo.txt"));
 
 	free(r);
 	return (0);
