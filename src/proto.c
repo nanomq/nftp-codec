@@ -19,6 +19,8 @@
 #pragma comment(lib, "hashtable-static.lib")
 #endif
 
+static char *recvdir = NULL;
+
 struct file_cb {
 	char *fname;
 	int (*cb)(void *);
@@ -141,6 +143,8 @@ nftp_proto_fini()
 	ht_clear(&files);
 	ht_destroy(&files);
 
+	if (recvdir) free(recvdir);
+
 	return (0);
 }
 
@@ -185,7 +189,6 @@ nftp_proto_send_stop(char *fpath)
 	free(fname);
 	return (0);
 }
-
 
 int
 nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
@@ -273,6 +276,8 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	uint32_t hashcode = 0;
 	nftp * n;
 	char   partname[NFTP_FNAME_LEN + 8];
+	char   fullpath[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
+	char   fullpath2[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
 	nftp_alloc(&n);
 
 	// Set default return value
@@ -309,10 +314,11 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		if (nftp_file_exist(n->fname)) {
 			nftp_file_newname(n->fname, &ctx->wfname);
 			nftp_log("File [%s] exists, recver would save to [%s]", n->fname, ctx->wfname);
-			nftp_file_partname(ctx->wfname, partname);
-			nftp_file_write(partname, "", 0); // create file
+			nftp_file_partname(partname, ctx->wfname);
+			nftp_file_fullpath(fullpath, recvdir, partname);
+			nftp_file_write(fullpath, "", 0); // create file
 		} else {
-			if ((ctx->wfname = malloc(n->namelen)+1) == NULL) {
+			if ((ctx->wfname = malloc(n->namelen+1)) == NULL) {
 				return (NFTP_ERR_MEM);
 			}
 			strcpy(ctx->wfname, n->fname);
@@ -344,10 +350,11 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		if ((ctx = *((struct nctx **)ht_lookup(&files, &n->fileflag))) == NULL) {
 			return NFTP_ERR_HT;
 		}
-		nftp_file_partname(ctx->wfname, partname);
+		nftp_file_partname(partname, ctx->wfname);
+		nftp_file_fullpath(fullpath, recvdir, partname);
 
 		if (n->id == ctx->nextid) {
-			if (0 != nftp_file_append(partname, n->content, n->ctlen)) {
+			if (0 != nftp_file_append(fullpath, n->content, n->ctlen)) {
 				return (NFTP_ERR_FILE);
 			}
 			do {
@@ -355,7 +362,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				if ((ctx->nextid > ctx->cap-1) ||
 				    (ctx->entries[ctx->nextid].body == NULL))
 					break;
-				if (0 != nftp_file_append(partname,
+				if (0 != nftp_file_append(fullpath,
 				        ctx->entries[ctx->nextid].body,
 				        ctx->entries[ctx->nextid].len)) {
 					return (NFTP_ERR_FILE);
@@ -382,8 +389,9 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		if (ctx->len == ctx->cap) {
 			ctx->status = NFTP_STATUS_FINISH;
 			// Rename
-			if (0 != nftp_file_rename(partname, ctx->wfname)) {
-				nftp_fatal("Error happened in file rename [%s].", partname);
+			nftp_file_fullpath(fullpath2, recvdir, ctx->wfname);
+			if (0 != nftp_file_rename(fullpath, fullpath2)) {
+				nftp_fatal("Error happened in file rename [%s].", fullpath);
 				return (NFTP_ERR_FILE);
 			}
 			// hash check
@@ -464,6 +472,21 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg, int cli)
 			fcb_cnt4s ++;
 		}
 	}
+
+	return (0);
+}
+
+int
+nftp_set_recvdir(char * dir)
+{
+	char * rdir;
+	if ((rdir = malloc(strlen(dir)+1)) == NULL) {
+		return (NFTP_ERR_MEM);
+	}
+	if (recvdir) free(recvdir);
+
+	strcpy(rdir, dir);
+	recvdir = rdir;
 
 	return (0);
 }

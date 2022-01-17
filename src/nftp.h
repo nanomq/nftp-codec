@@ -27,6 +27,7 @@
 #define NFTP_FILES        32 // Receive up to 32 files at once
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 #define NFTP_FNAME_LEN    64
+#define NFTP_FDIR_LEN     256
 
 #ifdef _WIN32
 #ifndef DEBUG
@@ -125,11 +126,21 @@ typedef struct {
 	uint8_t * exbuf;
 } nftp;
 
-#define nftp_file_partname(fname, buf)                \
+#define nftp_file_partname(buf, fname)                \
 	do {                                          \
 		strcpy(buf, fname);                   \
 		strcpy(buf + strlen(fname), ".part"); \
-	} while (0);
+	} while (0)
+
+#define nftp_file_fullpath(buf, dir, fname)               \
+	do {                                              \
+		if (dir) {                                \
+			strcpy(buf, dir);                 \
+			strcpy(buf + strlen(dir), fname); \
+		} else {                                  \
+			strcpy(buf, fname);               \
+		}                                         \
+	} while (0)
 
 uint32_t nftp_djb_hashn(const uint8_t *, size_t);
 uint32_t nftp_fnv1a_hashn(const uint8_t *, size_t);
@@ -202,6 +213,8 @@ int nftp_proto_send_stop(char *);
 int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
 int nftp_proto_handler(uint8_t *, size_t, uint8_t **, size_t *);
 int nftp_proto_register(char *, int (*cb)(void *), void *, int);
+
+int nftp_set_recvdir(char *);
 
 #endif
 
