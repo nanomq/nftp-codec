@@ -27,7 +27,7 @@ char *
 nftp_file_path(char *fpath)
 {
 	char * dir;
-	dir = malloc(strlen(fpath));
+	if ((dir = malloc(strlen(fpath))) == NULL) return NULL;
 #ifdef _WIN32
 	_splitpath_s(fpath,
 		NULL, 0,            // Don't need drive
@@ -44,7 +44,7 @@ char *
 nftp_file_bname(char *fpath)
 {
 	char * bname;
-	bname = malloc(sizeof(char) * strlen(fpath));
+	if ((bname = malloc(strlen(fpath))) == NULL) return NULL;
 #ifdef _WIN32
 	_splitpath_s(fpath,
 		NULL, 0,    // Don't need drive
