@@ -27,13 +27,15 @@ char *
 nftp_file_path(char *fpath)
 {
 	char * dir;
-	if ((dir = malloc(strlen(fpath))) == NULL) return NULL;
+	if ((dir = malloc(strlen(fpath)+4)) == NULL) return NULL;
 #ifdef _WIN32
+	char buf[3];
 	_splitpath_s(fpath,
-		NULL, 0,            // Don't need drive
-		dir, sizeof(dir),   // Just the directory
+		buf,  3,            // Don't need drive
+		dir+2,sizeof(dir),  // Just the directory
 		NULL, 0,            // Don't need filename
 		NULL, 0);
+	strcpy(dir, buf);
 #else
 	strcpy(dir, dirname(fpath));
 #endif
@@ -44,13 +46,15 @@ char *
 nftp_file_bname(char *fpath)
 {
 	char * bname;
-	if ((bname = malloc(strlen(fpath))) == NULL) return NULL;
+	if ((bname = malloc(strlen(fpath)+16)) == NULL) return NULL;
 #ifdef _WIN32
+	char ext[16];
 	_splitpath_s(fpath,
 		NULL, 0,    // Don't need drive
 		NULL, 0,    // Don't need directory
 		bname, sizeof(bname),  // just the filename
-		NULL, 0);
+		ext  , sizeof(ext));
+	strcpy(bname+strlen(bname), ext, sizeof(ext));
 #else
 	strcpy(bname, basename(fpath));
 #endif

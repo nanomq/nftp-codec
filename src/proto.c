@@ -93,10 +93,11 @@ nctx_free(struct nctx * n) {
 static void
 nctx_free_cb(void *k, void *v, void *u)
 {
+	struct nctx ** vp = v;
 	k = k;
 	u = u;
-	if (v) {
-		nctx_free(v);
+	if (vp) {
+		nctx_free(*vp);
 	}
 }
 
@@ -108,12 +109,14 @@ nftp_proto_init()
 		return (NFTP_ERR_MEM);
 	}
 	memset(fcb_reg, 0, NFTP_FILES + 1);
+	nftp_proto_register("*", NULL, NULL, NFTP_RECVER);
 
 	fcb_cnt4s = 0;
 	if ((fcb_reg4s = malloc(sizeof(struct file_cb *) * (NFTP_FILES + 1))) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
 	memset(fcb_reg4s, 0, NFTP_FILES + 1);
+	nftp_proto_register("*", NULL, NULL, NFTP_SENDER);
 
 	ht_setup(&files, sizeof(uint32_t), sizeof(struct nctx*), NFTP_FILES);
 
@@ -316,17 +319,17 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		if (nftp_file_exist(fullpath)) {
 			nftp_file_newname(n->fname, &ctx->wfname);
 			nftp_log("File [%s] exists, recver would save to [%s]", n->fname, ctx->wfname);
-			nftp_file_partname(partname, ctx->wfname);
-			nftp_file_fullpath(fullpath, recvdir, partname);
-			if (0 != (rv = nftp_file_write(fullpath, "", 0))) { // create file
-				nftp_fatal("File write failed [%s]", fullpath);
-				return rv;
-			}
 		} else {
 			if ((ctx->wfname = malloc(n->namelen+1)) == NULL) {
 				return (NFTP_ERR_MEM);
 			}
 			strcpy(ctx->wfname, n->fname);
+		}
+		nftp_file_partname(partname, ctx->wfname);
+		nftp_file_fullpath(fullpath, recvdir, partname);
+		if (0 != (rv = nftp_file_write(fullpath, "", 0))) { // create file
+			nftp_fatal("File write failed [%s]", fullpath);
+			return rv;
 		}
 
 		if (0 != (rv = ht_insert(&files, &ctx->fileflag, &ctx))) {
