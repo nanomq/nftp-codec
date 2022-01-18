@@ -281,3 +281,19 @@ nftp_file_hash(char *fpath, uint32_t *hashval)
 	return (0);
 }
 
+#ifdef _WIN32
+__declspec(dllexport) int
+nftp_file_exist_w(char *fpath)
+{
+	return nftp_file_exist(fpath);
+}
+
+__declspec(dllexport) int
+nftp_file_blocks_w(char *fpath)
+{
+	size_t len;
+	nftp_file_blocks(fpath, &len);
+	return (int)len;
+}
+
+#endif

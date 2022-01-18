@@ -216,5 +216,23 @@ int nftp_proto_register(char *, int (*cb)(void *), void *, int);
 
 int nftp_set_recvdir(char *);
 
+#ifdef _WIN32
+struct nftp_buf {
+	char * body;
+	int    len;
+};
+
+__declspec(dllexport) int nftp_file_exist_w(char *);
+__declspec(dllexport) int nftp_file_blocks_w(char *);
+
+__declspec(dllexport) int nftp_proto_init_w();
+__declspec(dllexport) int nftp_proto_fini_w();
+__declspec(dllexport) int nftp_proto_send_start_w(char *);
+__declspec(dllexport) int nftp_proto_send_stop_w(char *);
+__declspec(dllexport) struct nftp_buf * nftp_proto_maker_w(char *, int, int);
+__declspec(dllexport) struct nftp_buf * nftp_proto_handler_w(char *, int);
+__declspec(dllexport) int nftp_set_recvdir_w(char *);
+#endif
+
 #endif
 

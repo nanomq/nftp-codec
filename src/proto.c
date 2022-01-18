@@ -508,3 +508,67 @@ nftp_set_recvdir(char * dir)
 	return (0);
 }
 
+#ifdef _WIN32
+__declspec(dllexport) int
+nftp_proto_init_w()
+{
+	return nftp_proto_init();
+}
+
+__declspec(dllexport) int
+nftp_proto_fini_w()
+{
+	return nftp_proto_fini();
+}
+
+__declspec(dllexport) int
+nftp_proto_send_start_w(char *fname)
+{
+	return nftp_proto_send_start(fname);
+}
+
+__declspec(dllexport) int
+nftp_proto_send_stop_w(char *fname)
+{
+	return nftp_proto_send_stop(fname);
+}
+
+__declspec(dllexport) struct nftp_buf *
+nftp_proto_maker_w(char *fname, int type, int n)
+{
+	int rv;
+	struct nftp_buf * buf = malloc(sizeof(struct nftp_buf));
+	if (0 != (rv = nftp_proto_maker(fname, type, n, &buf->body, &buf->len))) {
+		buf->body = malloc(sizeof(char) * 10);
+		memset(buf->body, '\0', 10);
+		sprintf(buf->body, "Errno %d", rv);
+		buf->len = 9;
+	}
+	return buf;
+}
+
+__declspec(dllexport) struct nftp_buf *
+nftp_proto_handler_w(char * msg, int len)
+{
+	int rv;
+	struct nftp_buf * buf = malloc(sizeof(struct nftp_buf));
+	if (0 != (rv = nftp_proto_handler(msg, (size_t)len, &buf->body, &buf->len))){
+		buf->body = malloc(sizeof(char) * 10);
+		memset(buf->body, '\0', 10);
+		sprintf(buf->body, "Errno %d", rv);
+		buf->len = 9;
+	} else {
+		buf->body = malloc(sizeof(char) * 2);
+		buf->len  = 1;
+		buf->body[0] = '0'; buf->body[1] = '\0';
+	}
+	return buf;
+}
+
+__declspec(dllexport) int
+nftp_set_recvdir_w(char *dir)
+{
+	return nftp_set_recvdir(dir);
+}
+#endif
+
