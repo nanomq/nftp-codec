@@ -86,6 +86,7 @@ enum NFTP_ERR {
 	NFTP_ERR_EMPTY,
 	NFTP_ERR_PROTO,
 	NFTP_ERR_DIRTY,
+	NFTP_ERR_VEC,
 	NFTP_ERR_IOVS,
 	NFTP_ERR_FLAG,
 	NFTP_ERR_STREAM,
@@ -160,6 +161,21 @@ int nftp_file_write(char *, char *, size_t);
 int nftp_file_append(char *, char *, size_t);
 int nftp_file_clear(char *);
 int nftp_file_hash(char *, uint32_t *);
+
+typedef struct nftp_vec nftp_vec;
+
+int nftp_vec_alloc(nftp_vec **);
+int nftp_vec_free(nftp_vec *);
+int nftp_vec_append(nftp_vec *, void *);
+int nftp_vec_insert(nftp_vec *, void *, int);
+int nftp_vec_delete(nftp_vec *, void **, int);
+int nftp_vec_push(nftp_vec *, void *, int);
+int nftp_vec_pop(nftp_vec *, void **, int);
+int nftp_vec_get(nftp_vec *, int, void **);
+int nftp_vec_getidx(nftp_vec *, void *, int*);
+int nftp_vec_cat(nftp_vec *, nftp_vec *);
+size_t nftp_vec_cap(nftp_vec *);
+size_t nftp_vec_len(nftp_vec *);
 
 typedef struct nftp_iovs nftp_iovs;
 

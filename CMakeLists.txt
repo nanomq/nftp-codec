@@ -16,6 +16,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hashtable)
 set(SOURCES 
   src/file.c
   src/hash.c
+  src/vector.c
   src/iovs.c
   src/codec.c
   src/proto.c

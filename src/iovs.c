@@ -83,6 +83,7 @@ nftp_iovs_insert(nftp_iovs *iovs, void *ptr, size_t len, size_t pos)
 	iovs->iovs[pos].iov_base = ptr;
 	iovs->iovs[pos].iov_len  = len;
 
+	iovs->len ++;
 	iovs->iolen += len;
 	return (0);
 }
