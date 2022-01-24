@@ -50,7 +50,7 @@ test_file()
 	assert(sz == strlen(str));
 	free(demo);
 
-	assert(NFTP_ERR_FILE == nftp_file_readblk(file, 1, &demo, &sz));
+	assert(NFTP_ERR_BLOCKS == nftp_file_readblk(file, 1, &demo, &sz));
 
 	assert(0 == nftp_file_append(file, str, strlen(str)));
 	assert(0 == nftp_file_read(file, &demo, &sz));

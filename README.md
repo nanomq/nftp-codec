@@ -42,7 +42,8 @@ int sender() {
 	rv = nftp_proto_handler(r, rlen, &s, &slen);
 	if (rv && s == NULL) {
 		nftp_file_blocks(fname, &blocks);
-		for (int i=1; i<blocks; ++i) {
+		// Note. index from 1, and end with blocks
+		for (int i=1; i<=blocks; ++i) {
 			nftp_proto_maker(fname, NFTP_TYPE_FILE, i, &s, &slen);
 			test_send(s, slen);
 			free(s);

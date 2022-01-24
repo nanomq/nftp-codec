@@ -231,13 +231,14 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		if (0 != (rv = nftp_file_readblk(fpath, n, (char **)&v, &len))) {
+		if (0 == n) return (NFTP_ERR_ID);
+		if (0 != (rv = nftp_file_readblk(fpath, n-1, (char **)&v, &len))) {
 			return rv;
 		}
 		if (0 != (rv = nftp_file_blocks(fpath, &blocks))) {
 			return rv;
 		}
-		if (n == blocks-1) {
+		if (n == blocks) {
 			p->type = NFTP_TYPE_END;
 		} else {
 			p->type = NFTP_TYPE_FILE;
@@ -246,7 +247,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		p->content = v;
 		p->ctlen = len;
 		p->len = 6 + 4 + p->ctlen + 1;
-		p->id = n+1;
+		p->id = n;
 		p->fileflag = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		break;
 

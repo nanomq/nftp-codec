@@ -149,7 +149,7 @@ nftp_file_readblk(char *fpath, int n, char **strp, size_t *sz)
 	filesize = ftell(fp);
 
 	if (n > filesize/NFTP_BLOCK_SZ) {
-		return (NFTP_ERR_FILE);
+		return (NFTP_ERR_BLOCKS);
 	} else if (n == filesize/NFTP_BLOCK_SZ) {
 		blksz = filesize - n*NFTP_BLOCK_SZ;
 	} else {
