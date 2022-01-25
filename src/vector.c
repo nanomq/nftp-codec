@@ -81,7 +81,7 @@ nftp_vec_delete(nftp_vec *v, void **entryp, int pos)
 {
 	if (!v) return (NFTP_ERR_VEC);
 
-	if (pos < v->low || pos > v->low + v->len)
+	if (pos < 0 || pos > v->len-1)
 		return (NFTP_ERR_OVERFLOW);
 
 	*entryp = v->vec[v->low + pos];
@@ -131,7 +131,7 @@ nftp_vec_pop(nftp_vec *v, void **entryp, int flag)
 		pos = v->low;
 		v->low ++;
 	} else if (NFTP_TAIL == flag) {
-		pos = v->low + v->len;
+		pos = v->low + v->len - 1;
 	} else {
 		return (NFTP_ERR_FLAG);
 	}

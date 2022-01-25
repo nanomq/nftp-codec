@@ -12,6 +12,7 @@ main()
 {
 	test_hash();
 	test_file();
+	test_vector();
 	test_iovs();
 	test_codec();
 	test_proto();

@@ -14,8 +14,8 @@ add_subdirectory(hashtable)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hashtable)
 
 set(SOURCES 
-  src/file.c
   src/hash.c
+  src/file.c
   src/vector.c
   src/iovs.c
   src/codec.c
@@ -33,6 +33,7 @@ if(TEST)
 	  test/test.c
 	  test/hash.c
 	  test/file.c
+	  test/vector.c
 	  test/iovs.c
 	  test/codec.c
 	  test/proto.c)
