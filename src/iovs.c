@@ -7,6 +7,7 @@
 //
 //
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,11 +23,12 @@ struct iovec {
 #include "nftp.h"
 
 struct nftp_iovs {
-	struct iovec *iovs;
-	size_t        low; // iov loaded from iovs+low
-	size_t        len; // counter of iov in iovs
-	size_t        cap;
-	size_t        iolen;
+	struct iovec *  iovs;
+	size_t          low; // iov loaded from iovs+low
+	size_t          len; // counter of iov in iovs
+	size_t          cap;
+	size_t          iolen;
+	pthread_mutex_t mtx;
 };
 
 static int
@@ -48,6 +50,8 @@ nftp_iovs_alloc(nftp_iovs **iovsp)
 		free(iovs);
 		return (NFTP_ERR_MEM);
 	}
+
+	pthread_mutex_init(&iovs->mtx, NULL);
 
 	iovs->cap = NFTP_SIZE;
 	iovs->len = 0;
@@ -76,6 +80,8 @@ nftp_iovs_insert(nftp_iovs *iovs, void *ptr, size_t len, size_t pos)
 		return nftp_iovs_push(iovs, ptr, len, NFTP_TAIL);
 	}
 
+	pthread_mutex_lock(&iovs->mtx);
+
 	for (int i = iovs->low + iovs->len; i > iovs->low + pos; --i) {
 		iovs->iovs[i].iov_base = iovs->iovs[i - 1].iov_base;
 		iovs->iovs[i].iov_len  = iovs->iovs[i - 1].iov_len;
@@ -85,6 +91,8 @@ nftp_iovs_insert(nftp_iovs *iovs, void *ptr, size_t len, size_t pos)
 
 	iovs->len ++;
 	iovs->iolen += len;
+
+	pthread_mutex_unlock(&iovs->mtx);
 	return (0);
 }
 
@@ -93,8 +101,10 @@ nftp_iovs_push(nftp_iovs *iovs, void *ptr, size_t len, int flag)
 {
 	struct iovec *iov;
 
+	pthread_mutex_lock(&iovs->mtx);
 	if (flag == NFTP_HEAD) {
 		if (iovs->low == 0) {
+			pthread_mutex_unlock(&iovs->mtx);
 			return (NFTP_ERR_OVERFLOW); // Resize TODO
 		}
 
@@ -102,11 +112,13 @@ nftp_iovs_push(nftp_iovs *iovs, void *ptr, size_t len, int flag)
 		iov = &iovs->iovs[iovs->low];
 	} else if (flag == NFTP_TAIL) {
 		if (iovs->low + iovs->len > iovs->cap) {
+			pthread_mutex_unlock(&iovs->mtx);
 			return (NFTP_ERR_OVERFLOW); // Resize TODO
 		}
 
 		iov = &iovs->iovs[iovs->low + iovs->len];
 	} else {
+		pthread_mutex_unlock(&iovs->mtx);
 		return (NFTP_ERR_FLAG);
 	}
 	iov->iov_base = ptr;
@@ -114,6 +126,8 @@ nftp_iovs_push(nftp_iovs *iovs, void *ptr, size_t len, int flag)
 
 	iovs->len++;
 	iovs->iolen += len;
+
+	pthread_mutex_unlock(&iovs->mtx);
 	return (0);
 }
 
@@ -126,12 +140,15 @@ nftp_iovs_pop(nftp_iovs *iovs, void **ptrp, size_t *lenp, int flag)
 		return (NFTP_ERR_EMPTY);
 	}
 
+	pthread_mutex_lock(&iovs->mtx);
+
 	if (flag == NFTP_HEAD) {
 		iov = &iovs->iovs[iovs->low];
 		iovs->low++;
 	} else if (flag == NFTP_TAIL) {
 		iov = &iovs->iovs[iovs->low + iovs->len - 1];
 	} else {
+		pthread_mutex_unlock(&iovs->mtx);
 		return (NFTP_ERR_FLAG);
 	}
 
@@ -142,6 +159,8 @@ nftp_iovs_pop(nftp_iovs *iovs, void **ptrp, size_t *lenp, int flag)
 
 	iovs->len--;
 	iovs->iolen -= (*lenp);
+
+	pthread_mutex_unlock(&iovs->mtx);
 	return 0;
 }
 
@@ -166,14 +185,20 @@ nftp_iovs_cat(nftp_iovs *dest, nftp_iovs *src)
 		return (NFTP_ERR_OVERFLOW); // Resize TODO
 	}
 
+	pthread_mutex_lock(&d->mtx);
+	pthread_mutex_lock(&s->mtx);
+
 	int idx = d->low + d->len;
 	for (int i = 0; i < s->len; ++i) {
 		d->iovs[idx + i].iov_base = s->iovs[s->low + i].iov_base;
 		d->iovs[idx + i].iov_len  = s->iovs[s->low + i].iov_len;
 	}
+	pthread_mutex_unlock(&s->mtx);
 
 	d->len += s->len;
 	d->iolen += s->iolen;
+
+	pthread_mutex_unlock(&d->mtx);
 	return (0);
 }
 
@@ -184,6 +209,7 @@ nftp_iovs_free(nftp_iovs *iovs)
 		return (NFTP_ERR_MEM);
 	}
 
+	pthread_mutex_destroy(&iovs->mtx);
 	free(iovs->iovs);
 	free(iovs);
 	return (0);
@@ -198,10 +224,14 @@ nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp, size_t *len)
 		return (NFTP_ERR_MEM);
 	}
 
+	pthread_mutex_lock(&iovs->mtx);
+
 	for (int i=iovs->low; i<iovs->low + iovs->len; ++i) {
 		memcpy(str + pos, iovs->iovs[i].iov_base, iovs->iovs[i].iov_len);
 		pos += iovs->iovs[i].iov_len;
 	}
+
+	pthread_mutex_unlock(&iovs->mtx);
 
 	*strp = str;
 	*len = iovs->iolen;
