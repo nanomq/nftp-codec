@@ -231,7 +231,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		if (0 == n) return (NFTP_ERR_ID);
+		if (0 >= n) return (NFTP_ERR_ID);
 		if (0 != (rv = nftp_file_readblk(fpath, n-1, (char **)&v, &len))) {
 			return rv;
 		}

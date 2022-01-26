@@ -13,6 +13,7 @@
 #include "nftp.h"
 
 #ifdef _WIN32
+
 #define F_OK 0
 
 inline int access(const char *pathname, int mode) {
@@ -52,9 +53,9 @@ nftp_file_bname(char *fpath)
 	_splitpath_s(fpath,
 		NULL, 0,    // Don't need drive
 		NULL, 0,    // Don't need directory
-		bname, sizeof(bname),  // just the filename
-		ext  , sizeof(ext));
-	strcpy(bname+strlen(bname), ext, sizeof(ext));
+		bname, strlen(fpath) + 15,  // just the filename
+		ext  , 15);
+	strcpy(bname+strlen(bname), ext, 15);
 #else
 	strcpy(bname, basename(fpath));
 #endif
@@ -105,7 +106,7 @@ nftp_file_size(char *fpath, size_t *sz)
 	FILE * fp;
 	size_t filesize;
 
-	if ((fp = fopen(fpath, "r")) == NULL) {
+	if ((fp = fopen(fpath, "rb")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -140,7 +141,7 @@ nftp_file_readblk(char *fpath, int n, char **strp, size_t *sz)
 	size_t filesize;
 	size_t blksz;
 
-	if ((fp = fopen(fpath, "r")) == NULL) {
+	if ((fp = fopen(fpath, "rb")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -180,7 +181,7 @@ nftp_file_read(char *fpath, char **strp, size_t *sz)
 	char   txt[1000];
 	size_t filesize;
 
-	if ((fp = fopen(fpath, "r")) == NULL) {
+	if ((fp = fopen(fpath, "rb")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -208,7 +209,7 @@ nftp_file_write(char * fpath, char * str, size_t sz)
 	FILE * fp;
 	size_t filesize;
 
-	if ((fp = fopen(fpath, "w")) == NULL) {
+	if ((fp = fopen(fpath, "wb")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -228,7 +229,7 @@ nftp_file_append(char * fpath, char * str, size_t sz)
 	FILE * fp;
 	int    filesize;
 
-	if ((fp = fopen(fpath, "a")) == NULL) {
+	if ((fp = fopen(fpath, "ab")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -247,7 +248,7 @@ nftp_file_clear(char * fpath)
 {
 	FILE * fp;
 
-	if ((fp = fopen(fpath, "w")) == NULL) {
+	if ((fp = fopen(fpath, "wb")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
 	}
@@ -265,7 +266,7 @@ nftp_file_hash(char *fpath, uint32_t *hashval)
 	int      pos;
 	uint32_t res = 5381;
 
-	if ((fp = fopen(fpath, "r")) == NULL) {
+	if ((fp = fopen(fpath, "rb")) == NULL) {
 		nftp_fatal("read error");
 		return (NFTP_ERR_FILE);
 	}
