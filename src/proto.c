@@ -32,9 +32,8 @@ struct buf {
 	size_t    len;
 };
 
-HashTable        files;
-struct file_cb **fcb_reg;
-size_t           fcb_cnt;
+HashTable files;
+nftp_vec *fcb_reg;
 
 struct nctx {
 	size_t          len;
@@ -102,12 +101,13 @@ nctx_free_cb(void *k, void *v, void *u)
 int
 nftp_proto_init()
 {
-	fcb_cnt = 0;
-	if ((fcb_reg = malloc(sizeof(struct file_cb *) * (NFTP_FILES + 1))) == NULL) {
-		return (NFTP_ERR_MEM);
-	}
-	memset(fcb_reg, 0, NFTP_FILES + 1);
-	nftp_proto_register("*", NULL, NULL);
+	int rv;
+
+	if (0 != (rv = nftp_vec_alloc(&fcb_reg)))
+		return rv;
+	// Set default callback and arg for all file
+	if (0 != (rv = nftp_proto_register("*", NULL, NULL)))
+		return rv;
 
 	ht_setup(&files, sizeof(uint32_t), sizeof(struct nctx*), NFTP_FILES);
 
@@ -117,13 +117,9 @@ nftp_proto_init()
 int
 nftp_proto_fini()
 {
-	for (int i=0; i<fcb_cnt+1; i++) {
-		if (fcb_reg[i]) {
-			if (fcb_reg[i]->fname) free(fcb_reg[i]->fname);
-			free(fcb_reg[i]);
-		}
-	}
-	free(fcb_reg);
+	int rv;
+	if (0 != (rv = nftp_vec_free(fcb_reg)))
+		return rv;
 
 	ht_iterate(&files, NULL, nctx_free_cb);
 	ht_clear(&files);
@@ -232,13 +228,14 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 int
 nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 {
-	int rv = 1;
-	struct nctx * ctx = NULL;
-	uint32_t hashcode = 0;
-	nftp * n;
-	char   partname[NFTP_FNAME_LEN + 8];
-	char   fullpath[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
-	char   fullpath2[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
+	int             rv       = 1;
+	uint32_t        hashcode = 0;
+	nftp *          n;
+	struct nctx *   ctx = NULL;
+	struct file_cb *fcb = NULL;
+	char            partname[NFTP_FNAME_LEN + 8];
+	char            fullpath[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
+	char            fullpath2[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
 
 	if (0 != (rv = nftp_alloc(&n))) return rv;
 
@@ -255,27 +252,24 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		        strlen(n->fname));
 		ctx->hashcode = n->hashcode;
 
-		for (int i=0; i<fcb_cnt; ++i) {
-			if (0 == strcmp(fcb_reg[i+1]->fname, n->fname)) {
-				ctx->fcb = fcb_reg[i+1];
-			}
+		// TODO Iterator
+		for (int i=0; i<nftp_vec_len(fcb_reg); ++i) {
+			if (0 == nftp_vec_get(fcb_reg, i, (void **)&fcb))
+				if (0 == strcmp(fcb->fname, n->fname))
+					ctx->fcb = fcb;
 		}
 		if (NULL == ctx->fcb) {
-			nftp_log("Unregistered filename [%s]\n", n->fname);
-			nftp_proto_register(n->fname, fcb_reg[0]->cb, fcb_reg[0]->arg);
-		}
-
-		// TODO Optimization
-		for (int i=0; i<fcb_cnt; ++i) {
-			if (0 == strcmp(fcb_reg[i+1]->fname, n->fname)) {
-				ctx->fcb = fcb_reg[i+1];
-			}
+			nftp_log("Set default callback for file [%s]", n->fname);
+			nftp_vec_get(fcb_reg, 0, (void **)&fcb);
+			ctx->fcb = fcb;
+			nftp_proto_register(n->fname, fcb->cb, fcb->arg);
 		}
 
 		nftp_file_fullpath(fullpath, recvdir, n->fname);
 		if (nftp_file_exist(fullpath)) {
 			nftp_file_newname(n->fname, &ctx->wfname);
-			nftp_log("File [%s] exists, recver would save to [%s]", n->fname, ctx->wfname);
+			nftp_log("File [%s] exists, recver would save to [%s]",
+			        n->fname, ctx->wfname);
 		} else {
 			if ((ctx->wfname = malloc(n->namelen+1)) == NULL) {
 				return (NFTP_ERR_MEM);
@@ -377,11 +371,11 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 				ctx->fcb->cb(ctx->fcb->arg);
 
 			// Free resource
-			for (int i=0; i<fcb_cnt; ++i)
-				if (ctx->fcb == fcb_reg[i+1]) {
-					fcb_reg[i+1] = NULL;
-					fcb_cnt --;
-				}
+			for (int i=0; i<nftp_vec_len(fcb_reg); ++i)
+				if (0 == nftp_vec_get(fcb_reg, i, (void **)&fcb))
+					if (ctx->fcb == fcb)
+						nftp_vec_delete(fcb_reg, (void **)&fcb, i);
+
 			free(ctx->fcb->fname);
 			free(ctx->fcb);
 
@@ -427,10 +421,9 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 	strcpy(fcb->fname, fname);
 
 	if (0 == strcmp("*", fname)) {
-		fcb_reg[0] = fcb;
+		nftp_vec_push(fcb_reg, fcb, NFTP_HEAD);
 	} else {
-		fcb_reg[fcb_cnt+1] = fcb;
-		fcb_cnt ++;
+		nftp_vec_push(fcb_reg, fcb, NFTP_TAIL);
 	}
 
 	return (0);
