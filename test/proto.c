@@ -57,10 +57,8 @@ test_proto_handler()
 	uint8_t * r = NULL, * s = NULL;
 	size_t rlen, slen, blocks;
 
-	// For sender
-	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'am demo send.", NFTP_SENDER));
 	// For recver
-	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv.", NFTP_RECVER));
+	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv."));
 	assert(0 == nftp_set_recvdir("./build/"));
 
 	// For sender

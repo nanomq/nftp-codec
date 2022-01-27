@@ -35,8 +35,6 @@ struct buf {
 HashTable        files;
 struct file_cb **fcb_reg;
 size_t           fcb_cnt;
-struct file_cb **fcb_reg4s;
-size_t           fcb_cnt4s;
 
 struct nctx {
 	size_t          len;
@@ -109,14 +107,7 @@ nftp_proto_init()
 		return (NFTP_ERR_MEM);
 	}
 	memset(fcb_reg, 0, NFTP_FILES + 1);
-	nftp_proto_register("*", NULL, NULL, NFTP_RECVER);
-
-	fcb_cnt4s = 0;
-	if ((fcb_reg4s = malloc(sizeof(struct file_cb *) * (NFTP_FILES + 1))) == NULL) {
-		return (NFTP_ERR_MEM);
-	}
-	memset(fcb_reg4s, 0, NFTP_FILES + 1);
-	nftp_proto_register("*", NULL, NULL, NFTP_SENDER);
+	nftp_proto_register("*", NULL, NULL);
 
 	ht_setup(&files, sizeof(uint32_t), sizeof(struct nctx*), NFTP_FILES);
 
@@ -133,14 +124,6 @@ nftp_proto_fini()
 		}
 	}
 	free(fcb_reg);
-
-	for (int i=0; i<fcb_cnt4s+1; i++) {
-		if (fcb_reg4s[i]) {
-			if (fcb_reg4s[i]->fname) free(fcb_reg4s[i]->fname);
-			free(fcb_reg4s[i]);
-		}
-	}
-	free(fcb_reg4s);
 
 	ht_iterate(&files, NULL, nctx_free_cb);
 	ht_clear(&files);
@@ -159,13 +142,6 @@ nftp_proto_send_start(char *fpath)
 	if ((fname = nftp_file_bname(fpath)) == NULL)
 		return (NFTP_ERR_FILEPATH);
 
-	for (int i = 0; i < fcb_cnt4s; ++i) {
-		if (0 == strcmp(fname, fcb_reg4s[i+1]->fname)) {
-			return (0);
-		}
-	}
-
-	nftp_proto_register(fname, NULL, NULL, NFTP_SENDER);
 	free(fname);
 	return (0);
 }
@@ -173,26 +149,7 @@ nftp_proto_send_start(char *fpath)
 int
 nftp_proto_send_stop(char *fpath)
 {
-	char * fname;
-	if (NULL == fpath) return (NFTP_ERR_FILEPATH);
-	if ((fname = nftp_file_bname(fpath)) == NULL)
-		return (NFTP_ERR_FILEPATH);
-
-	for (int i = 0; i < fcb_cnt4s; ++i) {
-		if (0 == strcmp(fname, fcb_reg4s[i+1]->fname)) {
-			// run callback
-			if (fcb_reg4s[i + 1]->cb)
-				fcb_reg4s[i + 1]->cb(fcb_reg4s[i + 1]->arg);
-
-			free(fcb_reg4s[i+1]->fname);
-			free(fcb_reg4s[i+1]);
-			fcb_reg4s[i+1] = NULL;
-			fcb_cnt4s --;
-		}
-	}
-
-	free(fname);
-	return (0);
+	// TODO send something to stop the recver
 }
 
 int
@@ -305,8 +262,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		}
 		if (NULL == ctx->fcb) {
 			nftp_log("Unregistered filename [%s]\n", n->fname);
-			nftp_proto_register(n->fname, fcb_reg[0]->cb,
-					fcb_reg[0]->arg, NFTP_RECVER);
+			nftp_proto_register(n->fname, fcb_reg[0]->cb, fcb_reg[0]->arg);
 		}
 
 		// TODO Optimization
@@ -343,14 +299,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		break;
 
 	case NFTP_TYPE_ACK:
-		// TODO optimization for calculate
-		for (int i=0; i<fcb_cnt4s; ++i) {
-			char * str = fcb_reg4s[i+1]->fname;
-			if (n->fileflag == NFTP_HASH((uint8_t *)str, strlen(str))) {
-				rv = 0;
-			}
-		}
-		if (rv != 0) return (NFTP_ERR_EMPTY);
+		// TODO return An Iterator
 		break;
 
 	case NFTP_TYPE_FILE:
@@ -459,7 +408,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 // be handled. When all the msgs marked with a fileflag are
 // received, the cb(arg) function would be executed.
 int
-nftp_proto_register(char * fname, int (*cb)(void *), void *arg, int cli)
+nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 {
 	struct file_cb * fcb;
 
@@ -478,16 +427,10 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg, int cli)
 	strcpy(fcb->fname, fname);
 
 	if (0 == strcmp("*", fname)) {
-		if      (NFTP_RECVER == cli) fcb_reg[0]   = fcb;
-		else if (NFTP_SENDER == cli) fcb_reg4s[0] = fcb;
+		fcb_reg[0] = fcb;
 	} else {
-		if (NFTP_RECVER == cli) {
-			fcb_reg[fcb_cnt+1] = fcb;
-			fcb_cnt ++;
-		} else if (NFTP_SENDER == cli) {
-			fcb_reg4s[fcb_cnt4s+1] = fcb;
-			fcb_cnt4s ++;
-		}
+		fcb_reg[fcb_cnt+1] = fcb;
+		fcb_cnt ++;
 	}
 
 	return (0);
