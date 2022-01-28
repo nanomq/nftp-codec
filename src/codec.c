@@ -124,8 +124,7 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		break;
 
 	default:
-		nftp_fatal("UNDEFINED TYPE PACKET");
-		return (NFTP_ERR_PROTO);
+		return (NFTP_ERR_TYPE);
 	}
 	return (0);
 }
@@ -182,8 +181,7 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		break;
 
 	default:
-		nftp_fatal("UNDEFINED TYPE PACKET");
-		return (NFTP_ERR_PROTO);
+		return (NFTP_ERR_TYPE);
 	}
 	if (0 != rv) goto error;
 

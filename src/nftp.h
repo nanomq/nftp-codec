@@ -16,6 +16,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "log4nftp.h"
+
 #define NFTP_TYPE_HELLO   0x01
 #define NFTP_TYPE_ACK     0x02
 #define NFTP_TYPE_FILE    0x03
@@ -28,50 +30,6 @@
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 #define NFTP_FNAME_LEN    64
 #define NFTP_FDIR_LEN     256
-
-#ifdef _WIN32
-#ifndef DEBUG
-#define nftp_fatal(format, ...)                                                 \
-	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-		    __FUNCTION__, __VA_ARGS__);                                     \
-	} while (0)
-#else
-// Only EXIT in DEBUG MODE
-#define nftp_fatal(format, ...)                                                 \
-	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-		    __FUNCTION__, __VA_ARGS__);                                     \
-		exit(0);                                                      \
-	} while (0)
-#endif
-#else
-#ifndef DEBUG
-#define nftp_fatal(format, arg...)                                                 \
-	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-		    __FUNCTION__, ##arg);                                     \
-	} while (0)
-#else
-// Only EXIT in DEBUG MODE
-#define nftp_fatal(format, arg...)                                                 \
-	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-		    __FUNCTION__, ##arg);                                     \
-		exit(0);                                                      \
-	} while (0)
-#endif
-#endif
-
-#ifdef _WIN32
-#define nftp_log(format, ...)                                           \
-	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-	    __FUNCTION__, __VA_ARGS__)
-#else
-#define nftp_log(format, arg...)                                           \
-	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-	    __FUNCTION__, ##arg)
-#endif
 
 enum NFTP_ERR {
 	NFTP_ERR_HASH = 0x01,
@@ -91,6 +49,7 @@ enum NFTP_ERR {
 	NFTP_ERR_FLAG,
 	NFTP_ERR_STREAM,
 	NFTP_ERR_HT,
+	NFTP_ERR_TYPE,
 };
 
 enum NFTP_FLAG {

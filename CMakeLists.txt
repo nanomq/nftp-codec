@@ -21,6 +21,7 @@ set(SOURCES
   src/codec.c
   src/proto.c
   src/nftp.h
+  src/debug.h
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)

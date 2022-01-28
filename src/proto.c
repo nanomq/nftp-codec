@@ -409,7 +409,6 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 	if (NULL == fname) return (NFTP_ERR_FILENAME);
 
 	if ((fcb = malloc(sizeof(struct file_cb))) == NULL) {
-		nftp_fatal("Error in malloc fcb.");
 		return (NFTP_ERR_MEM);
 	}
 	fcb->cb = cb;
