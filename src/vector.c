@@ -221,3 +221,52 @@ nftp_vec_len(nftp_vec *v)
 	return v->len;
 }
 
+// Implementation of iterator for vector
+static nftp_iter *
+vec_iter_next(nftp_iter *self)
+{
+	nftp_vec * v = self->matrix;
+
+	self->key ++;
+	self->val = NULL;
+	nftp_vec_get(v, self->key, &self->val);
+
+	return self;
+}
+
+static nftp_iter *
+vec_iter_prev(nftp_iter *self)
+{
+	nftp_vec * v = self->matrix;
+
+	self->key --;
+	self->val = NULL;
+	nftp_vec_get(v, self->key, &self->val);
+
+	return self;
+}
+
+static void
+vec_iter_free(nftp_iter *self)
+{
+	free(self);
+}
+
+nftp_iter *
+nftp_vec_iter(nftp_vec *v)
+{
+	nftp_iter * iter;
+
+	if (NULL == (iter = malloc(sizeof(*iter))))
+		return NULL;
+
+	iter->next = vec_iter_next;
+	iter->prev = vec_iter_prev;
+	iter->free = vec_iter_free;
+	iter->key = 0;
+	iter->val = NULL;
+	iter->matrix = (void *)v;
+
+	return iter;
+}
+

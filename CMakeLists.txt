@@ -18,10 +18,11 @@ set(SOURCES
   src/file.c
   src/vector.c
   src/iovs.c
+  src/iter.c
   src/codec.c
   src/proto.c
   src/nftp.h
-  src/debug.h
+  src/log4nftp.h
 )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -36,6 +37,7 @@ if(TEST)
 	  test/file.c
 	  test/vector.c
 	  test/iovs.c
+	  test/iter.c
 	  test/codec.c
 	  test/proto.c)
   target_link_libraries(test nftp-codec hashtable)

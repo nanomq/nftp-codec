@@ -52,6 +52,11 @@ enum NFTP_ERR {
 	NFTP_ERR_TYPE,
 };
 
+enum NFTP_SCHEMA {
+	NFTP_SCHEMA_IOVS = 0x01,
+	NFTP_SCHEMA_VEC,
+};
+
 enum NFTP_FLAG {
 	NFTP_HEAD = 0x01,
 	NFTP_TAIL,
@@ -80,6 +85,16 @@ typedef struct {
 	uint8_t   crc;
 	uint8_t * exbuf;
 } nftp;
+
+typedef struct _iter {
+	int    schema;
+	int    key;
+	void * val;
+	void * matrix;
+	struct _iter *(*next)(struct _iter *);
+	struct _iter *(*prev)(struct _iter *);
+	void          (*free)(struct _iter *);
+} nftp_iter;
 
 #define nftp_file_partname(buf, fname)                \
 	do {                                          \
@@ -116,6 +131,14 @@ int nftp_file_append(char *, char *, size_t);
 int nftp_file_clear(char *);
 int nftp_file_hash(char *, uint32_t *);
 
+nftp_iter * nftp_iter_alloc(int, void *);
+void        nftp_iter_free(nftp_iter *);
+nftp_iter * nftp_iter_next(nftp_iter *);
+nftp_iter * nftp_iter_prev(nftp_iter *);
+
+#define NFTP_NEXT(iter) nftp_iter_next(iter)
+#define NFTP_PREV(iter) nftp_iter_prev(iter)
+
 typedef struct nftp_vec nftp_vec;
 
 int nftp_vec_alloc(nftp_vec **);
@@ -130,6 +153,8 @@ int nftp_vec_getidx(nftp_vec *, void *, int*);
 int nftp_vec_cat(nftp_vec *, nftp_vec *);
 size_t nftp_vec_cap(nftp_vec *);
 size_t nftp_vec_len(nftp_vec *);
+// Iterator
+nftp_iter * nftp_vec_iter(nftp_vec *);
 
 typedef struct nftp_iovs nftp_iovs;
 
@@ -142,6 +167,8 @@ int nftp_iovs_cat(nftp_iovs *, nftp_iovs *);
 int nftp_iovs_free(nftp_iovs *);
 size_t nftp_iovs_len(nftp_iovs *);
 size_t nftp_iovs_cap(nftp_iovs *);
+// Iterator
+nftp_iter * nftp_iovs_iter(nftp_iovs *);
 
 int nftp_iovs2stream(nftp_iovs *, uint8_t **, size_t *);
 

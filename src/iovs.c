@@ -238,3 +238,54 @@ nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp, size_t *len)
 	return 0;
 }
 
+// Implementation of iterator for iovs
+static nftp_iter *
+iovs_iter_next(nftp_iter *self)
+{
+	nftp_iovs * iovs = self->matrix;
+
+	self->key ++;
+	self->val = NULL;
+	if (self->key <= iovs->len)
+		self->val = &iovs->iovs[iovs->low + self->key];
+
+	return self;
+}
+
+static nftp_iter *
+iovs_iter_prev(nftp_iter *self)
+{
+	nftp_iovs * iovs = self->matrix;
+
+	self->key --;
+	self->val = NULL;
+	if (self->key <= iovs->len)
+		self->val = &iovs->iovs[iovs->low + self->key];
+
+	return self;
+}
+
+static void
+iovs_iter_free(nftp_iter *self)
+{
+	free(self);
+}
+
+nftp_iter *
+nftp_iovs_iter(nftp_iovs *iovs)
+{
+	nftp_iter * iter;
+
+	if (NULL == (iter = malloc(sizeof(*iter))))
+		return NULL;
+
+	iter->next = iovs_iter_next;
+	iter->prev = iovs_iter_prev;
+	iter->free = iovs_iter_free;
+	iter->key = 0;
+	iter->val = NULL;
+	iter->matrix = (void *)iovs;
+
+	return iter;
+}
+
