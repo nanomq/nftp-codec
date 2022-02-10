@@ -282,7 +282,7 @@ nftp_iovs_iter(nftp_iovs *iovs)
 	iter->next = iovs_iter_next;
 	iter->prev = iovs_iter_prev;
 	iter->free = iovs_iter_free;
-	iter->key = 0;
+	iter->key = -1;
 	iter->val = NULL;
 	iter->matrix = (void *)iovs;
 

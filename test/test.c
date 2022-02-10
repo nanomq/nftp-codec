@@ -14,6 +14,7 @@ main()
 	test_file();
 	test_vector();
 	test_iovs();
+	test_iter();
 	test_codec();
 	test_proto();
 }

@@ -166,7 +166,8 @@ int
 nftp_vec_get(nftp_vec *v, int idx, void **entryp)
 {
 	if (!v) return (NFTP_ERR_VEC);
-	if (idx > v->len) return (NFTP_ERR_OVERFLOW);
+	if (idx >= v->len) return (NFTP_ERR_OVERFLOW);
+	if (idx < 0) return (NFTP_ERR_OVERFLOW);
 
 	*entryp = v->vec[v->low + idx];
 
@@ -263,7 +264,7 @@ nftp_vec_iter(nftp_vec *v)
 	iter->next = vec_iter_next;
 	iter->prev = vec_iter_prev;
 	iter->free = vec_iter_free;
-	iter->key = 0;
+	iter->key = -1;
 	iter->val = NULL;
 	iter->matrix = (void *)v;
 
