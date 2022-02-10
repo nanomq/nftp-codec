@@ -22,7 +22,7 @@ struct iovec {
 
 #include "nftp.h"
 
-struct nftp_iovs {
+struct _iovs {
 	struct iovec *  iovs;
 	size_t          low; // iov loaded from iovs+low
 	size_t          len; // counter of iov in iovs

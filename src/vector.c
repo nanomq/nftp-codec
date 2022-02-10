@@ -12,7 +12,7 @@
 
 #include "nftp.h"
 
-struct nftp_vec {
+struct _vec {
 	size_t          cap; // capicity
 	size_t          len; // number of elements
 	size_t          low; // elements stored from here
@@ -21,7 +21,7 @@ struct nftp_vec {
 };
 
 static int
-resize(struct nftp_vec *v) // TODO
+resize(nftp_vec *v) // TODO
 {
 	return (0);
 }
@@ -29,7 +29,7 @@ resize(struct nftp_vec *v) // TODO
 int
 nftp_vec_alloc(nftp_vec **vp)
 {
-	struct nftp_vec *v;
+	nftp_vec *v;
 
 	if ((v = malloc(sizeof(*v))) == NULL)
 		return (NFTP_ERR_MEM);

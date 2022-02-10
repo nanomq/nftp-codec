@@ -139,7 +139,7 @@ nftp_iter * nftp_iter_prev(nftp_iter *);
 #define NFTP_NEXT(iter) nftp_iter_next(iter)
 #define NFTP_PREV(iter) nftp_iter_prev(iter)
 
-typedef struct nftp_vec nftp_vec;
+typedef struct _vec nftp_vec;
 
 int nftp_vec_alloc(nftp_vec **);
 int nftp_vec_free(nftp_vec *);
@@ -156,7 +156,7 @@ size_t nftp_vec_len(nftp_vec *);
 // Iterator
 nftp_iter * nftp_vec_iter(nftp_vec *);
 
-typedef struct nftp_iovs nftp_iovs;
+typedef struct _iovs nftp_iovs;
 
 int nftp_iovs_alloc(nftp_iovs **);
 int nftp_iovs_append(nftp_iovs *, void *, size_t);
