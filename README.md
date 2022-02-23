@@ -14,10 +14,6 @@ It's a lightweight ftp parser, and provide a convenient **maker & handler** mech
 
 * Support asynchronous send / recv
 
-* Support discontinued transmission(TODO)
-
-* Nolock(TODO)
-
 ## Quick start
 
 Sender
@@ -38,9 +34,10 @@ int sender() {
 	nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, &s, &slen);
 	test_send(s, slen); // your send function. for example tcp_send()
 
+	// waiting for ack
 	test_recv(&r, &rlen); // your recv function. for example tcp_recv();
 	rv = nftp_proto_handler(r, rlen, &s, &slen);
-	if (rv && s == NULL) {
+	if (rv == 0) {
 		nftp_file_blocks(fname, &blocks);
 		// Note. index from 1, and end with blocks
 		for (int i=1; i<=blocks; ++i) {
@@ -106,11 +103,17 @@ sender  ---END--->  recver
 
 A good question! TODO :)
 
+### Something u should know
+
+|  Property   | iter | vector | iovs | codec | file | hash | proto |
+| :---------: | :--: | :----: | :--: | :---: | :--: | :--: | :---: |
+| Thread-safe |  X   |   O    |  O   |   O   |  X   |  O   |   X   |
+
 ## TODO List
 
 * NFTP Version 1.0 standard docs
-
-* Multi-thread
-
+* More easy to use
+* Support discontinued transmission
+* Nolock
 * And so on...
 
