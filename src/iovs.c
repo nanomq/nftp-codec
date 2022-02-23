@@ -11,15 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef _WIN32
-struct iovec {
-	void * iov_base;
-	size_t iov_len;
-};
-#else
-#include <sys/uio.h>
-#endif
-
 #include "nftp.h"
 
 struct _iovs {
@@ -246,7 +237,7 @@ iovs_iter_next(nftp_iter *self)
 
 	self->key ++;
 	self->val = NULL;
-	if (self->key <= iovs->len)
+	if (self->key < iovs->len)
 		self->val = &iovs->iovs[iovs->low + self->key];
 
 	return self;

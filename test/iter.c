@@ -19,6 +19,7 @@ test_iter()
 	nftp_vec *v;
 	nftp_iovs *iovs;
 	nftp_iter *iter;
+	struct iovec * iov;
 
 	assert(0 == nftp_vec_alloc(&v));
 	assert(0 == nftp_vec_append(v, &n1));
@@ -49,19 +50,22 @@ test_iter()
 	assert(NULL != (iter = nftp_iter_alloc(NFTP_SCHEMA_IOVS, iovs)));
 	assert(-1 == iter->key);
 	assert(NULL == iter->val);
-/*
+
 	assert(NULL != nftp_iter_next(iter));
 	assert(0 == iter->key);
-	assert(&n1 == iter->val);
+	iov = (struct iovec *) iter->val;
+	assert(&n1 == iov->iov_base);
+	assert(1 == iov->iov_len);
 
 	assert(NULL != nftp_iter_next(iter));
 	assert(1 == iter->key);
-	assert(&n2 == iter->val);
+	iov = (struct iovec *) iter->val;
+	assert(&n2 == iov->iov_base);
+	assert(1 == iov->iov_len);
 
 	assert(NULL != nftp_iter_next(iter));
 	assert(2 == iter->key);
 	assert(NULL == iter->val);
-*/
 
 	assert(0 == nftp_iovs_free(iovs));
 
