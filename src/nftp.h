@@ -79,6 +79,8 @@ struct iovec {
 #include <sys/uio.h>
 #endif
 
+typedef struct iovec nftp_msg;
+
 typedef struct {
 	uint8_t   type;
 	uint32_t  len;
@@ -216,8 +218,8 @@ int nftp_proto_init();
 int nftp_proto_fini();
 int nftp_proto_send_start(char *);
 int nftp_proto_send_stop(char *);
-int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
-int nftp_proto_handler(uint8_t *, size_t, uint8_t **, size_t *);
+int nftp_proto_maker(char *, int, size_t, nftp_msg **);
+int nftp_proto_handler(nftp_msg *, nftp_msg **);
 int nftp_proto_register(char *, int (*cb)(void *), void *);
 
 int nftp_set_recvdir(char *);

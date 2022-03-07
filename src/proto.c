@@ -149,13 +149,14 @@ nftp_proto_send_stop(char *fpath)
 }
 
 int
-nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
+nftp_proto_maker(char *fpath, int type, size_t n, nftp_msg **retmsg)
 {
 	int rv;
 	nftp * p;
 	uint8_t *v;
 	size_t len, blocks;
 	char * fname;
+	nftp_msg * msg;
 
 	if (NULL == fpath) return (NFTP_ERR_FILEPATH);
 	if ((fname = nftp_file_bname(fpath)) == NULL)
@@ -210,7 +211,10 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		break;
 	}
 
-	if (0 != (rv = nftp_encode(p, rmsg, rlen))) return rv;
+	if ((msg = malloc(sizeof(*msg))) == NULL)
+		return NFTP_ERR_MEM;
+	if (0 != (rv = nftp_encode(p, (uint8_t **)&msg->iov_base, &msg->iov_len)))
+		return rv;
 
 	if (NFTP_TYPE_END == p->type) {
 		nftp_proto_send_stop(fpath);
@@ -219,6 +223,8 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	p->fname = NULL; // Avoid free in nftp_free by mistake
 	nftp_free(p);
 	free(fname);
+
+	*retmsg = msg;
 	return (0);
 }
 
@@ -226,7 +232,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 // the msg is not comply with the nftp protocol, nftp will
 // ignore it.
 int
-nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
+nftp_proto_handler(nftp_msg *srcmsg, nftp_msg **retmsg)
 {
 	int             rv       = 1;
 	uint32_t        hashcode = 0;
@@ -241,9 +247,9 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 
 	// Set default return value
 	*retmsg = NULL;
-	*rlen = 0;
 
-	if (0 != (rv = nftp_decode(n, msg, len))) return rv;
+	if (0 != (rv = nftp_decode(n, srcmsg->iov_base, srcmsg->iov_len)))
+		return rv;
 
 	switch (n->type) {
 	case NFTP_TYPE_HELLO:
@@ -289,7 +295,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		}
 		ctx->status = NFTP_STATUS_HELLO;
 
-		nftp_proto_maker(n->fname, NFTP_TYPE_ACK, 0, retmsg, rlen);
+		nftp_proto_maker(n->fname, NFTP_TYPE_ACK, 0, retmsg);
 		break;
 
 	case NFTP_TYPE_ACK:
