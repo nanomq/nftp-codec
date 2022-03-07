@@ -228,9 +228,13 @@ vec_iter_next(nftp_iter *self)
 {
 	nftp_vec * v = self->matrix;
 
-	self->key ++;
-	self->val = NULL;
-	nftp_vec_get(v, self->key, &self->val);
+	if (self->key == NFTP_TAIL) {
+		self->val = NULL;
+	} else {
+		self->key ++;
+		if (0 != nftp_vec_get(v, self->key, &self->val))
+			self->key = NFTP_TAIL;
+	}
 
 	return self;
 }
@@ -240,9 +244,13 @@ vec_iter_prev(nftp_iter *self)
 {
 	nftp_vec * v = self->matrix;
 
-	self->key --;
-	self->val = NULL;
-	nftp_vec_get(v, self->key, &self->val);
+	if (self->key == NFTP_TAIL) {
+		self->val = NULL;
+	} else {
+		self->key --;
+		if (0 != nftp_vec_get(v, self->key, &self->val))
+			self->key = NFTP_HEAD;
+	}
 
 	return self;
 }
@@ -264,7 +272,7 @@ nftp_vec_iter(nftp_vec *v)
 	iter->next = vec_iter_next;
 	iter->prev = vec_iter_prev;
 	iter->free = vec_iter_free;
-	iter->key = -1;
+	iter->key = NFTP_HEAD;
 	iter->val = NULL;
 	iter->matrix = (void *)v;
 

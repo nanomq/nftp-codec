@@ -235,10 +235,13 @@ iovs_iter_next(nftp_iter *self)
 {
 	nftp_iovs * iovs = self->matrix;
 
-	self->key ++;
-	self->val = NULL;
-	if (self->key < iovs->len)
+	if (self->key >= iovs->len) {
+		self->key = NFTP_TAIL;
+		self->val = NULL;
+	} else {
+		self->key ++;
 		self->val = &iovs->iovs[iovs->low + self->key];
+	}
 
 	return self;
 }
@@ -248,10 +251,15 @@ iovs_iter_prev(nftp_iter *self)
 {
 	nftp_iovs * iovs = self->matrix;
 
-	self->key --;
-	self->val = NULL;
-	if (self->key <= iovs->len)
+	if (self->key == NFTP_TAIL) {
+		self->key = iovs->len - 1;
 		self->val = &iovs->iovs[iovs->low + self->key];
+	} else if (self->key == NFTP_HEAD) {
+		self->val = NULL;
+	} else {
+		self->key --;
+		self->val = &iovs->iovs[iovs->low + self->key];
+	}
 
 	return self;
 }
@@ -273,7 +281,7 @@ nftp_iovs_iter(nftp_iovs *iovs)
 	iter->next = iovs_iter_next;
 	iter->prev = iovs_iter_prev;
 	iter->free = iovs_iter_free;
-	iter->key = -1;
+	iter->key = NFTP_HEAD;
 	iter->val = NULL;
 	iter->matrix = (void *)iovs;
 

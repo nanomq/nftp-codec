@@ -57,10 +57,8 @@ enum NFTP_SCHEMA {
 	NFTP_SCHEMA_VEC,
 };
 
-enum NFTP_FLAG {
-	NFTP_HEAD = 0x01,
-	NFTP_TAIL,
-};
+#define NFTP_HEAD (-1)
+#define NFTP_TAIL (0x7FFFFFFF)
 
 enum NFTP_STATUS {
 	NFTP_STATUS_HELLO = 0x01,

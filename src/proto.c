@@ -233,6 +233,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	nftp *          n;
 	struct nctx *   ctx = NULL;
 	struct file_cb *fcb = NULL;
+	nftp_iter *     iter = NULL;
 	char            partname[NFTP_FNAME_LEN + 8];
 	char            fullpath[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
 	char            fullpath2[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
@@ -252,12 +253,15 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		        strlen(n->fname));
 		ctx->hashcode = n->hashcode;
 
-		// TODO Iterator
-		for (int i=0; i<nftp_vec_len(fcb_reg); ++i) {
-			if (0 == nftp_vec_get(fcb_reg, i, (void **)&fcb))
-				if (0 == strcmp(fcb->fname, n->fname))
-					ctx->fcb = fcb;
+		iter = nftp_iter_alloc(NFTP_SCHEMA_VEC, fcb_reg);
+		while (iter->key != NFTP_TAIL) {
+			nftp_iter_next(iter);
+			fcb = iter->val;
+			if (0 == strcmp(fcb->fname, n->fname))
+				ctx->fcb = fcb;
 		}
+		nftp_iter_free(iter);
+
 		if (NULL == ctx->fcb) {
 			nftp_log("Set default callback for file [%s]", n->fname);
 			nftp_vec_get(fcb_reg, 0, (void **)&fcb);
