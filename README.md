@@ -36,17 +36,22 @@ int sender() {
 
 	// waiting for ack
 	test_recv(&r, &rlen); // your recv function. for example tcp_recv();
+	free(r);
+	// handle ack
 	rv = nftp_proto_handler(r, rlen, &s, &slen);
-	if (rv == 0) {
-		nftp_file_blocks(fname, &blocks);
-		// Note. index from 1, and end with blocks
-		for (int i=1; i<=blocks; ++i) {
-			nftp_proto_maker(fname, NFTP_TYPE_FILE, i, &s, &slen);
-			test_send(s, slen);
-			free(s);
-		}
+	if (rv != 0) {
+		goto done; // The ack not registered
 	}
 
+	nftp_file_blocks(fname, &blocks);
+	// Note. index from 1, and end with blocks
+	for (int i=1; i<=blocks; ++i) {
+		nftp_proto_maker(fname, NFTP_TYPE_FILE, i, &s, &slen);
+		test_send(s, slen);
+		free(s);
+	}
+
+done:
 	nftp_proto_fini();
 }
 ```
@@ -68,17 +73,23 @@ int recver() {
 
 	while (1) {
 		test_recv(&r, &rlen); // your recv function. for example tcp_recv();
-		nftp_proto_handler(r, rlen, &s, &slen);
-		if (rv == 0) {
-			if (s) {
-				test_send(s, slen);
-				free(s);
-			}
+
+		rv = nftp_proto_handler(r, rlen, &s, &slen);
+		free(r);
+		if (rv != 0) {
+			goto done;
+		}
+
+        if (s) {
+			// recved an hello and send an ack as response(if u want)
+			test_send(s, slen);
+			free(s);
 		} else {
-			printf("Not comply to nftp.\n");
+			printf("File transferring...\n");
 		}
 	}
 
+done:
 	nftp_proto_fini();
 }
 ```
