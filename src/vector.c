@@ -228,8 +228,8 @@ vec_iter_next(nftp_iter *self)
 {
 	nftp_vec * v = self->matrix;
 
+	self->val = NULL;
 	if (self->key == NFTP_TAIL) {
-		self->val = NULL;
 	} else {
 		self->key ++;
 		if (0 != nftp_vec_get(v, self->key, &self->val))
@@ -244,8 +244,8 @@ vec_iter_prev(nftp_iter *self)
 {
 	nftp_vec * v = self->matrix;
 
+	self->val = NULL;
 	if (self->key == NFTP_TAIL) {
-		self->val = NULL;
 	} else {
 		self->key --;
 		if (0 != nftp_vec_get(v, self->key, &self->val))

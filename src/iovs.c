@@ -235,7 +235,7 @@ iovs_iter_next(nftp_iter *self)
 {
 	nftp_iovs * iovs = self->matrix;
 
-	if (self->key >= iovs->len) {
+	if (self->key == iovs->len - 1) {
 		self->key = NFTP_TAIL;
 		self->val = NULL;
 	} else {

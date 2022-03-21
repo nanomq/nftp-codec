@@ -254,11 +254,12 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		ctx->hashcode = n->hashcode;
 
 		iter = nftp_iter_alloc(NFTP_SCHEMA_VEC, fcb_reg);
+		nftp_iter_next(iter);
 		while (iter->key != NFTP_TAIL) {
-			nftp_iter_next(iter);
 			fcb = iter->val;
 			if (0 == strcmp(fcb->fname, n->fname))
 				ctx->fcb = fcb;
+			nftp_iter_next(iter);
 		}
 		nftp_iter_free(iter);
 
