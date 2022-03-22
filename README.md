@@ -38,14 +38,15 @@ int sender() {
 
 	// waiting for ack
 	test_recv(&r, &rlen); // your recv function. for example tcp_recv();
-	free(r);
 	// handle ack
 	rv = nftp_proto_handler(r, rlen, &s, &slen);
+	free(r);
 	if (rv != 0) {
-		goto done; // The ack not registered
+		goto done; // The ack is invalid or other errors happened
 	}
 
 	nftp_file_blocks(fname, &blocks);
+
 	// Note. index from 1, and end with blocks
 	for (int i=1; i<=blocks; ++i) {
 		nftp_proto_maker(fname, NFTP_TYPE_FILE, i, &s, &slen);
@@ -79,10 +80,10 @@ int recver() {
 		rv = nftp_proto_handler(r, rlen, &s, &slen);
 		free(r);
 		if (rv != 0) {
-			goto done;
+			goto done; // Errors happened when recving
 		}
 
-        if (s) {
+		if (s) {
 			// recved an hello and send an ack as response(if u want)
 			test_send(s, slen);
 			free(s);
@@ -126,6 +127,5 @@ A good question! TODO :)
 
 * More easy to use
 * Support discontinued transmission
-* Nolock
 * And so on...
 
