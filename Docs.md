@@ -71,6 +71,16 @@ Its Content field contains 4 Bytes of hashcode of File.
 
 + Actions
 
+Sender **MUST** drop it If received a HELLO packet. After decoding the HELLO packet, something followed should be done.
+
+Check the ID, the ID **MUST** be (0x00)
+
+Binding the callback user set before for the filename if necessary.
+
+Create a part file for storing. It should be deleted after finishing receive.
+
+Better to return a ACK packet for responsing.
+
 ### ACK Packet
 
 + The ACK packet is a acknowledge of HELLO packet.
@@ -89,6 +99,10 @@ Followed with Fileflag.
 Its FileFlag field is the DJBHash value of FileName.
 
 + Action
+
+Recver **MUST** drop it If received a ACK packet. After decoding the ACK packet, something followed should be done.
+
+Check the ID, the ID **MUST** be (0x00).
 
 ### FILE Packet
 
@@ -113,18 +127,28 @@ Its CRC field is the Hashcode value of Content field.
 
 + Actions
 
+Sender **MUST** drop it If received a FILE packet. After decoding the FILE packet, something followed should be done.
+
+Check the ID, the ID **MUST NOT** be (0x00)
+
+Packets from multiple files can be transferred at same time.
+
+User can adjust the maximal number of files transferring. (Avoid OOM)
+
 ### END Packet
 
 + The END Packet is the last packet contain contents of file. It means the ending of transferring for a file.
 + Fixed Header
 
-All fields are same to the FILE Packet beside type field. The END Packet field is (0x04).
+All fields are same to the fields in FILE Packet beside type field. The END Packet field is (0x04).
 
 + More fields
 
-All fields are same to the FILE Packet.
+All fields are same to the fields in FILE Packet.
 
 + Actions
+
+All actions are same to the actions in FILE Packet.
 
 ### GIVEME Packet
 
@@ -145,5 +169,9 @@ Its FileName field contains the FileName which packet comes from.
 
 + Actions
 
-### 
+Recver **MUST** drop it If received a GIVEME packet. After decoding the GIVEME packet, something followed should be done.
+
+Check the ID, the ID **MUST NOT** be (0x00). Or we should stop transferring.
+
+Return a FILE/END Packet for caller.
 
