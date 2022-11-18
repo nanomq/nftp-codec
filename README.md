@@ -14,7 +14,7 @@ It's a lightweight ftp parser, and provide a convenient **maker & handler** mech
 
 * Support asynchronous send / recv
 
-* NFTP Version 1.0 standard docs are [Here](https://github.com/nanomq/nftp-codec/blob/main/doc-ver1.0.md)
+* NFTP Version 1.0 standard docs are [Here](https://github.com/nanomq/nftp-codec/blob/main/docs/doc-ver1.0.md)
 
 ## Quick start
 
