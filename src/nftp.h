@@ -82,6 +82,7 @@ typedef struct {
 	uint32_t  len;
 	uint8_t   id;
 	uint16_t  blocks;
+	uint16_t  blockseq;
 	char *    fpath;
 	char *    fname;
 	uint16_t  namelen;
@@ -89,7 +90,6 @@ typedef struct {
 	uint32_t  hashcode;
 	uint8_t * content;
 	size_t    ctlen;
-	uint8_t   crc;
 	uint8_t * exbuf;
 } nftp;
 
