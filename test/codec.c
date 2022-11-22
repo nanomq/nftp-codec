@@ -41,24 +41,25 @@ test_codec_hello()
 	uint8_t *v;
 
 	uint8_t demo1_hello[] = {
-		0x01, 0x00, 0x00, 0x00, 0x11, 0x00,       // type & length & id
-		0x03, 0x00, 0x04, 0x61, 0x62, 0x2e, 0x63, // blocks & file "ab.c"
-		0x7c, 0x6d, 0x8b, 0xab,                   // hashval
+		0x01, 0x00, 0x00, 0x00, 0x12, 0x00, // type & length & id
+		0x00, 0x03, 0x00, 0x04,             // blocks & length of filename
+		0x61, 0x62, 0x2e, 0x63,             // filename
+		0x7c, 0x6d, 0x8b, 0xab,             // hashval
 	};
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_hello, 17));
+	assert(0 == nftp_decode(p, demo1_hello, sizeof(demo1_hello)));
 
 	assert(NFTP_TYPE_HELLO == p->type);
-	assert(17 == p->len);
+	assert(sizeof(demo1_hello) == p->len);
 	assert(0 == p->id);
 	assert(3 == p->blocks);
 	assert(0 == strcmp("ab.c", p->fname));
 	assert(4 == p->namelen);
 
 	assert(0 == nftp_encode(p, &v, &len));
-	assert(17 == len);
+	assert(sizeof(demo1_hello) == len);
 	for (int i=0; i<len; i++) {
 		assert(demo1_hello[i] == v[i]);
 	}
@@ -77,7 +78,7 @@ test_codec_ack()
 
 	uint8_t demo1_ack[] = {
 		0x02, 0x00, 0x00, 0x00, 0x0a, 0x00,       // type & length & id
-		0x7c, 0x6d, 0x8b, 0xab,                   // fileflag
+		0x7c, 0x6d, 0x8b, 0xab,                   // fileid
 	};
 
 	assert(0 == nftp_alloc(&p));
@@ -87,10 +88,10 @@ test_codec_ack()
 	assert(NFTP_TYPE_ACK == p->type);
 	assert(10 == p->len);
 	assert(0 == p->id);
-	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileflag);
+	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileid);
 
 	assert(0 == nftp_encode(p, &v, &len));
-	assert(10 == len);
+	assert(sizeof(demo1_ack) == len);
 	for (int i=0; i<len; i++) {
 		assert(demo1_ack[i] == v[i]);
 	}
@@ -108,23 +109,24 @@ test_codec_file()
 	uint8_t *v;
 
 	uint8_t demo1_file[] = {
-		0x03, 0x00, 0x00, 0x00, 0x11, 0x02,       // type & length & id
-		0x7c, 0x6d, 0x8b, 0xab,                   // fileflag
-		0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x4f  // content & CRC
+		0x03, 0x00, 0x00, 0x00, 0x11,       // type & length
+		0x7c, 0x6d, 0x8b, 0xab, 0x00, 0x06, // fileid & blockseq
+		0x61, 0x62, 0x63, 0x64, 0x65, 0x66  // content
 	};
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_file, 17));
+	assert(0 == nftp_decode(p, demo1_file, sizeof(demo1_file)));
 
 	assert(NFTP_TYPE_FILE == p->type);
-	assert(17 == p->len);
-	assert(2 == p->id);
-	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileflag);
-	assert(0 == strncmp((char *)(demo1_file + 10), (char *)p->content, 6));
+	assert(sizeof(demo1_file) == p->len);
+	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileid);
+	assert(2 == p->blockseq);
+	assert(6 == p->ctlen);
+	assert(0 == strncmp((char *)(demo1_file + 11), (char *)p->content, 6));
 
 	assert(0 == nftp_encode(p, &v, &len));
-	assert(17 == len);
+	assert(sizeof(demo1_file) == len);
 	for (int i=0; i<len; i++) {
 		assert(demo1_file[i] == v[i]);
 	}
@@ -141,26 +143,25 @@ test_codec_end()
 	size_t len;
 	uint8_t *v;
 
-	uint8_t demo1_file[] = {
-		0x04, 0x00, 0x00, 0x00, 0x11, 0x02,       // type & length & id
-		0x7c, 0x6d, 0x8b, 0xab,                   // fileflag
-		0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x4f  // content & CRC
+	uint8_t demo1_end[] = {
+		0x04, 0x00, 0x00, 0x00, 0x11,       // type & length & id
+		0x7c, 0x6d, 0x8b, 0xab, 0x00, 0x06, // fileid & blockseq
+		0x61, 0x62, 0x63, 0x64, 0x65, 0x66  // content
 	};
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_file, 17));
+	assert(0 == nftp_decode(p, demo1_end, sizeof(demo1_end)));
 
 	assert(NFTP_TYPE_END == p->type);
-	assert(17 == p->len);
-	assert(2 == p->id);
-	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileflag);
-	assert(0 == strncmp((char *)(demo1_file + 10), (char *)p->content, 6));
+	assert(sizeof(demo1_end) == p->len);
+	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileid);
+	assert(0 == strncmp((char *)(demo1_end + 11), (char *)p->content, 6));
 
 	assert(0 == nftp_encode(p, &v, &len));
-	assert(17 == len);
+	assert(sizeof(demo1_end) == len);
 	for (int i=0; i<len; i++) {
-		assert(demo1_file[i] == v[i]);
+		assert(demo1_end[i] == v[i]);
 	}
 
 	assert(0 == nftp_free(p));
