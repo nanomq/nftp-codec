@@ -79,7 +79,7 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		p->id = *(v + pos); ++pos; // id
 		if (p->id != 0)
 			return (NFTP_ERR_ID);
-		p->blocks = (uint16_t) nftp_get_u16(v + pos); pos += 2;
+		nftp_get_u16(v + pos, p->blocks); pos += 2;
 		nftp_get_u16(v + pos, p->namelen); pos += 2;
 
 		if ((p->fname = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
@@ -104,16 +104,15 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (p->id == 0) return (NFTP_ERR_ID);
-		nftp_get_u32(v + pos, p->fileflag); pos += 4;
+		nftp_get_u32(v + pos, p->fileid); pos += 4;
 
-		p->ctlen = p->len - pos - 1;
+		nftp_get_u16(v + pos, p->blockseq); pos += 2;
+
+		nftp_get_u16(v + pos, p->ctlen); pos += 2;
+
 		if ((p->content = malloc(sizeof(char) * p->ctlen)) == NULL)
 			return (NFTP_ERR_MEM);
 		memcpy(p->content, v + pos, p->ctlen); pos = p->len;
-
-		p->crc = *(v + pos - 1);
-		if (p->crc != nftp_crc(p->content, p->ctlen))
-			return (NFTP_ERR_STREAM);
 		break;
 
 	case NFTP_TYPE_GIVEME:
@@ -166,14 +165,20 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (p->id == 0) return (NFTP_ERR_ID);
-		nftp_put_u32(p->exbuf + 4, p->fileflag);
-		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4) ||
-		    0 != nftp_iovs_append(iovs, (void *)p->content, p->ctlen)) {
+		nftp_put_u32(p->exbuf + 4, p->fileid);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4))
 			goto error;
-		}
 
-		p->crc = nftp_crc(p->content, p->ctlen);
-		rv |= nftp_iovs_append(iovs, (void *)&p->crc, 1);
+		nftp_put_u32(p->exbuf + 8, p->blockseq);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 8), 2))
+			goto error;
+
+		nftp_put_u32(p->exbuf + 10, p->ctlen);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 10), 2))
+			goto error;
+
+		if (0 != nftp_iovs_append(iovs, (void *)p->content, p->ctlen))
+			goto error;
 		break;
 
 	case NFTP_TYPE_GIVEME:
