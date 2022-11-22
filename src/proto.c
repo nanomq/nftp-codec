@@ -40,7 +40,7 @@ struct nctx {
 	size_t          cap;
 	size_t          nextid;
 	struct buf *    entries;
-	uint32_t        fileflag;
+	uint32_t        fileid;
 	uint32_t        hashcode;
 	struct file_cb *fcb;
 	char *          wfname;
@@ -167,19 +167,22 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 		p->type = NFTP_TYPE_HELLO;
 		p->len = 6 + 1 + 2+strlen(fname) + 4;
 		p->id = 0;
-		if (0 != (rv = nftp_file_size(fpath, &len))) return rv;
+		if (0 != (rv = nftp_file_size(fpath, &len)))
+			return rv;
+
 		p->blocks = (len/NFTP_BLOCK_SZ) + 1;
 		p->fname = fname;
 		p->namelen = strlen(fname);
 
-		if (0 != (rv = nftp_file_hash(fpath, &p->hashcode))) return rv;
+		if (0 != (rv = nftp_file_hash(fpath, &p->hashcode)))
+			return rv;
 		break;
 
 	case NFTP_TYPE_ACK:
 		p->type = NFTP_TYPE_ACK;
 		p->len = 6 + 4;
 		p->id = 0;
-		p->fileflag = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
+		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		break;
 
 	case NFTP_TYPE_FILE:
@@ -197,11 +200,12 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 			p->type = NFTP_TYPE_FILE;
 		}
 
-		p->content = v;
+		p->len = 5 + 4 + 2 + 2 + p->ctlen;
+		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
+		p->blockseq = n;
+
 		p->ctlen = len;
-		p->len = 6 + 4 + p->ctlen + 1;
-		p->id = n;
-		p->fileflag = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
+		p->content = v;
 		break;
 
 	case NFTP_TYPE_GIVEME:
