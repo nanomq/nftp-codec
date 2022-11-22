@@ -148,6 +148,7 @@ nftp_proto_send_stop(char *fpath)
 	// TODO send something to stop the recver
 }
 
+// TODO user should pass a key to present a session of transmission.
 int
 nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 {
@@ -166,7 +167,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	case NFTP_TYPE_HELLO:
 		p->type = NFTP_TYPE_HELLO;
 		p->len = 6 + 1 + 2+strlen(fname) + 4;
-		p->id = 0;
+		p->id = 0; // TODO
 		if (0 != (rv = nftp_file_size(fpath, &len)))
 			return rv;
 
@@ -181,7 +182,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	case NFTP_TYPE_ACK:
 		p->type = NFTP_TYPE_ACK;
 		p->len = 6 + 4;
-		p->id = 0;
+		p->id = 0; // TODO
 		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		break;
 
@@ -253,7 +254,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	switch (n->type) {
 	case NFTP_TYPE_HELLO:
 		ctx = nctx_alloc(n->blocks);
-		ctx->fileflag = NFTP_HASH((const uint8_t *)n->fname,
+		ctx->fileid = NFTP_HASH((const uint8_t *)n->fname,
 		        strlen(n->fname));
 		ctx->hashcode = n->hashcode;
 
@@ -292,7 +293,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			return rv;
 		}
 
-		if (0 != (rv = ht_insert(&files, &ctx->fileflag, &ctx))) {
+		if (0 != (rv = ht_insert(&files, &ctx->fileid, &ctx))) {
 			nftp_fatal("Error in hash");
 			return (NFTP_ERR_HT);
 		}
@@ -307,16 +308,16 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		if (!ht_contains(&files, &n->fileflag)) {
-			nftp_fatal("Not found fileflag [%d]", n->fileflag);
+		if (!ht_contains(&files, &n->fileid)) {
+			nftp_fatal("Not found fileid [%d]", n->fileid);
 			return NFTP_ERR_HT;
 		}
-		ctx = *((struct nctx **)ht_lookup(&files, &n->fileflag));
+		ctx = *((struct nctx **)ht_lookup(&files, &n->fileid));
 
 		nftp_file_partname(partname, ctx->wfname);
 		nftp_file_fullpath(fullpath, recvdir, partname);
 
-		if (n->id == ctx->nextid) {
+		if (n->blockseq == ctx->nextid) {
 			if (0 != nftp_file_append(fullpath, n->content, n->ctlen)) {
 				nftp_fatal("Error in file append [%s]", fullpath);
 				return (NFTP_ERR_FILE);
@@ -338,8 +339,8 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			} while (1);
 		} else {
 			// Just store it
-			ctx->entries[n->id].len = n->ctlen;
-			ctx->entries[n->id].body = n->content;
+			ctx->entries[n->blockseq].len = n->ctlen;
+			ctx->entries[n->blockseq].body = n->content;
 			n->content = NULL; // avoid be free
 		}
 
@@ -388,8 +389,8 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 			free(ctx->fcb->fname);
 			free(ctx->fcb);
 
-			if (0 != (rv = ht_erase(&files, &ctx->fileflag))) {
-				nftp_fatal("Not find the key [%d] in hashtable.", ctx->fileflag);
+			if (0 != (rv = ht_erase(&files, &ctx->fileid))) {
+				nftp_fatal("Not find the key [%d] in hashtable.", ctx->fileid);
 				return (NFTP_ERR_HT);
 			}
 			nctx_free(ctx);
@@ -407,8 +408,8 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 }
 
 // nftp_proto_register function is used to determine the files
-// to to received. Only the msg with fileflag registered would
-// be handled. When all the msgs marked with a fileflag are
+// to to received. Only the msg with fileid registered would
+// be handled. When all the msgs marked with a fileid are
 // received, the cb(arg) function would be executed.
 int
 nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
