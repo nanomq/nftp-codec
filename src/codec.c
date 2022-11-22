@@ -29,7 +29,7 @@ nftp_alloc(nftp ** pp)
 	p->fpath = NULL;
 	p->fname = NULL;
 	p->namelen = 0;
-	p->fileflag = 0;
+	p->fileid = 0;
 	p->hashcode = 0;
 	p->content = 0;
 	p->ctlen = 0;
@@ -69,7 +69,6 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 
 	p->type = *(v + pos); ++pos; // type
 	nftp_get_u32(v + pos, p->len); pos += 4; // len
-	p->id = *(v + pos); ++pos; // id
 
 	// Check if iolen eq to the length from decoding
 	if (len != p->len) return (NFTP_ERR_STREAM);
@@ -77,8 +76,10 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 	// Option parameter
 	switch ((uint32_t)p->type) {
 	case NFTP_TYPE_HELLO:
-		if (p->id != 0) return (NFTP_ERR_ID);
-		p->blocks = (int) *(v + pos); ++pos;
+		p->id = *(v + pos); ++pos; // id
+		if (p->id != 0)
+			return (NFTP_ERR_ID);
+		p->blocks = (uint16_t) nftp_get_u16(v + pos); pos += 2;
 		nftp_get_u16(v + pos, p->namelen); pos += 2;
 
 		if ((p->fname = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
@@ -94,8 +95,10 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		break;
 
 	case NFTP_TYPE_ACK:
-		if (p->id != 0) return (NFTP_ERR_ID);
-		nftp_get_u32(v + pos, p->fileflag); pos += 4;
+		p->id = *(v + pos); ++pos; // id
+		if (p->id != 0)
+			return (NFTP_ERR_ID);
+		nftp_get_u32(v + pos, p->fileid); pos += 4;
 		break;
 
 	case NFTP_TYPE_FILE:
@@ -140,7 +143,9 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 
 	switch (p->type) {
 	case NFTP_TYPE_HELLO:
-		if (0 != nftp_iovs_append(iovs, (void *)&p->blocks, 1)) goto error;
+		if (0 != nftp_iovs_append(iovs, (void *)&p->id, 1)) goto error;
+
+		if (0 != nftp_iovs_append(iovs, (void *)&p->blocks, 2)) goto error;
 
 		nftp_put_u16(p->exbuf + 4, p->namelen);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
@@ -153,7 +158,8 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		break;
 
 	case NFTP_TYPE_ACK:
-		nftp_put_u32(p->exbuf + 4, p->fileflag);
+		if (0 != nftp_iovs_append(iovs, (void *)&p->id, 1)) goto error;
+		nftp_put_u32(p->exbuf + 4, p->fileid);
 		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4);
 		break;
 
@@ -186,8 +192,7 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 	if (0 != rv) goto error;
 
 	nftp_put_u32(p->exbuf, p->len);
-	if (0 != nftp_iovs_push(iovs, (void *)&p->id, 1, NFTP_HEAD)   ||
-	    0 != nftp_iovs_push(iovs, (void *)p->exbuf, 4, NFTP_HEAD) ||
+	if (0 != nftp_iovs_push(iovs, (void *)p->exbuf, 4, NFTP_HEAD) ||
 	    0 != nftp_iovs_push(iovs, (void *)&p->type, 1, NFTP_HEAD)) {
 		goto error;
 	}
