@@ -81,11 +81,11 @@ typedef struct {
 	uint8_t   type;
 	uint32_t  len;
 	uint8_t   id;
-	uint8_t   blocks;
+	uint16_t  blocks;
 	char *    fpath;
 	char *    fname;
 	uint16_t  namelen;
-	uint32_t  fileflag;
+	uint32_t  fileid;
 	uint32_t  hashcode;
 	uint8_t * content;
 	size_t    ctlen;
