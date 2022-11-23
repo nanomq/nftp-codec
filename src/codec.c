@@ -144,16 +144,17 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 	case NFTP_TYPE_HELLO:
 		if (0 != nftp_iovs_append(iovs, (void *)&p->id, 1)) goto error;
 
-		if (0 != nftp_iovs_append(iovs, (void *)&p->blocks, 2)) goto error;
+		nftp_put_u16(p->exbuf + 4, p->blocks);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2)) goto error;
 
-		nftp_put_u16(p->exbuf + 4, p->namelen);
-		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
+		nftp_put_u16(p->exbuf + 6, p->namelen);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 6), 2) ||
 		    0 != nftp_iovs_append(iovs, (void *)p->fname, p->namelen)) {
 			goto error;
 		}
 
-		nftp_put_u32(p->exbuf + 6, p->hashcode);
-		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 6), 4);
+		nftp_put_u32(p->exbuf + 8, p->hashcode);
+		rv |= nftp_iovs_append(iovs, (void *)(p->exbuf + 8), 4);
 		break;
 
 	case NFTP_TYPE_ACK:
