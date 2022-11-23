@@ -33,7 +33,7 @@ nftp_alloc(nftp ** pp)
 	p->hashcode = 0;
 	p->content = 0;
 	p->ctlen = 0;
-	if ((p->exbuf = malloc(sizeof(char) * 10)) == NULL) {
+	if ((p->exbuf = malloc(sizeof(char) * 12)) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
 
@@ -103,7 +103,6 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		if (p->id == 0) return (NFTP_ERR_ID);
 		nftp_get_u32(v + pos, p->fileid); pos += 4;
 
 		nftp_get_u16(v + pos, p->blockseq); pos += 2;
@@ -165,16 +164,15 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		if (p->id == 0) return (NFTP_ERR_ID);
 		nftp_put_u32(p->exbuf + 4, p->fileid);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4))
 			goto error;
 
-		nftp_put_u32(p->exbuf + 8, p->blockseq);
+		nftp_put_u16(p->exbuf + 8, p->blockseq);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 8), 2))
 			goto error;
 
-		nftp_put_u32(p->exbuf + 10, p->ctlen);
+		nftp_put_u16(p->exbuf + 10, p->ctlen);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 10), 2))
 			goto error;
 
