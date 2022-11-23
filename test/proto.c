@@ -195,7 +195,7 @@ test_proto_maker_file()
 
 	assert(NFTP_TYPE_END == p->type);
 	assert(len == p->len);
-	assert(1 == p->id);
+	assert(1 == p->blockseq);
 	assert(NFTP_HASH((const uint8_t *)fname, strlen(fname)) == p->fileid);
 	assert(0 == strncmp(str, (char *)p->content, strlen(str)));
 

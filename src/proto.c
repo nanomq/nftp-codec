@@ -166,7 +166,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	switch (type) {
 	case NFTP_TYPE_HELLO:
 		p->type = NFTP_TYPE_HELLO;
-		p->len = 6 + 1 + 2+strlen(fname) + 4;
+		p->len = 5 + 1 + 2 + 2 + strlen(fname) + 4;
 		p->id = 0; // TODO
 		if (0 != (rv = nftp_file_size(fpath, &len)))
 			return rv;
@@ -201,7 +201,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 			p->type = NFTP_TYPE_FILE;
 		}
 
-		p->len = 5 + 4 + 2 + 2 + p->ctlen;
+		p->len = 5 + 4 + 2 + 2 + len;
 		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		p->blockseq = n;
 
