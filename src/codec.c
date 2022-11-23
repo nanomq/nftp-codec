@@ -77,8 +77,7 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 	switch ((uint32_t)p->type) {
 	case NFTP_TYPE_HELLO:
 		p->id = *(v + pos); ++pos; // id
-		if (p->id != 0)
-			return (NFTP_ERR_ID);
+
 		nftp_get_u16(v + pos, p->blocks); pos += 2;
 		nftp_get_u16(v + pos, p->namelen); pos += 2;
 
@@ -96,8 +95,7 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 
 	case NFTP_TYPE_ACK:
 		p->id = *(v + pos); ++pos; // id
-		if (p->id != 0)
-			return (NFTP_ERR_ID);
+
 		nftp_get_u32(v + pos, p->fileid); pos += 4;
 		break;
 
