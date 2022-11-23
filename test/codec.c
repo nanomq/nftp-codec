@@ -109,8 +109,9 @@ test_codec_file()
 	uint8_t *v;
 
 	uint8_t demo1_file[] = {
-		0x03, 0x00, 0x00, 0x00, 0x11,       // type & length
-		0x7c, 0x6d, 0x8b, 0xab, 0x00, 0x06, // fileid & blockseq
+		0x03, 0x00, 0x00, 0x00, 0x13,       // type & length
+		0x7c, 0x6d, 0x8b, 0xab,             // fileid
+		0x00, 0x02, 0x00, 0x06,             // blockseq & length of content
 		0x61, 0x62, 0x63, 0x64, 0x65, 0x66  // content
 	};
 
@@ -123,7 +124,7 @@ test_codec_file()
 	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileid);
 	assert(2 == p->blockseq);
 	assert(6 == p->ctlen);
-	assert(0 == strncmp((char *)(demo1_file + 11), (char *)p->content, 6));
+	assert(0 == strncmp((char *)(demo1_file + 13), (char *)p->content, 6));
 
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(sizeof(demo1_file) == len);
@@ -144,8 +145,9 @@ test_codec_end()
 	uint8_t *v;
 
 	uint8_t demo1_end[] = {
-		0x04, 0x00, 0x00, 0x00, 0x11,       // type & length & id
-		0x7c, 0x6d, 0x8b, 0xab, 0x00, 0x06, // fileid & blockseq
+		0x04, 0x00, 0x00, 0x00, 0x13,       // type & length & id
+		0x7c, 0x6d, 0x8b, 0xab,             // fileid
+		0x00, 0x02, 0x00, 0x06,             // blockseq & length of content
 		0x61, 0x62, 0x63, 0x64, 0x65, 0x66  // content
 	};
 
@@ -156,7 +158,7 @@ test_codec_end()
 	assert(NFTP_TYPE_END == p->type);
 	assert(sizeof(demo1_end) == p->len);
 	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileid);
-	assert(0 == strncmp((char *)(demo1_end + 11), (char *)p->content, 6));
+	assert(0 == strncmp((char *)(demo1_end + 13), (char *)p->content, 6));
 
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(sizeof(demo1_end) == len);
