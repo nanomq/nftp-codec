@@ -214,11 +214,39 @@ int nftp_proto_init();
 int nftp_proto_fini();
 int nftp_proto_send_start(char *);
 int nftp_proto_send_stop(char *);
-int nftp_proto_maker(char *, int, size_t, uint8_t **, size_t *);
-int nftp_proto_handler(uint8_t *, size_t, uint8_t **, size_t *);
+
+/*
+ * This function is to create a NFTP msg quickly.
+ *
+ * @fpath, Path to file.
+ * @type, NFTP_TYPE.
+ * @key, A key to present the session of transmission.
+ * @n, The index of block (blockseq).
+ * @rmsg, The msg we created.
+ * @rlen, The length of rmsg.
+ *
+ * @return, 0 if no errors. Or please refer to NFTP_ERR.
+ */
+int nftp_proto_maker(char *fpath, int type, uint8_t key,
+        size_t n, uint8_t **rmsg, size_t *rlen);
+
+/*
+ * This function is to handle the NFTP msg and return msg caller needed.
+ *
+ * @msg, Msg we received.
+ * @len, Length of msg.
+ * @rmsg, Msg we returned if needed.
+ * @rlen, Length of rmsg.
+ *
+ * @return, 0 if no errors. Or please refer to NFTP_ERR.
+ */
+int nftp_proto_handler(uint8_t *msg, size_t len,
+        uint8_t **rmsg, size_t *rlen);
+
 int nftp_proto_register(char *, int (*cb)(void *), void *);
 
 int nftp_set_recvdir(char *);
+int test();
 
 #endif
 
