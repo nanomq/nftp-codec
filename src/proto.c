@@ -66,7 +66,7 @@ nctx_alloc(size_t sz)
 
 	n->len      = 0;
 	n->cap      = sz;
-	n->nextid   = 1;
+	n->nextid   = 0;
 	n->wfname   = NULL;
 	n->fcb      = NULL;
 
@@ -187,14 +187,14 @@ nftp_proto_maker(char *fpath, int type, uint8_t key, size_t n, uint8_t **rmsg, s
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
-		if (0 >= n) return (NFTP_ERR_ID);
-		if (0 != (rv = nftp_file_readblk(fpath, n-1, (char **)&v, &len))) {
+		if (0 > n) return (NFTP_ERR_ID);
+		if (0 != (rv = nftp_file_readblk(fpath, n, (char **)&v, &len))) {
 			return rv;
 		}
 		if (0 != (rv = nftp_file_blocks(fpath, &blocks))) {
 			return rv;
 		}
-		if (n == blocks) {
+		if (n+1 == blocks) {
 			p->type = NFTP_TYPE_END;
 		} else {
 			p->type = NFTP_TYPE_FILE;

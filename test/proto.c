@@ -95,7 +95,7 @@ test_proto_handler()
 	// File blocks transferring
 	if (s == NULL && slen == 0) {
 		assert(0 == nftp_file_blocks(fname, &blocks));
-		for (int i=1; i<=blocks; ++i) {
+		for (int i=0; i < blocks; ++i) {
 			assert(0 == nftp_proto_maker(fname, NFTP_TYPE_FILE, key, i, &s, &slen));
 			test_send("END", s, slen);
 			// Transfer
