@@ -298,7 +298,7 @@ nftp_proto_handler(uint8_t *msg, size_t len, uint8_t **rmsg, size_t *rlen)
 		}
 		ctx->status = NFTP_STATUS_HELLO;
 
-		nftp_proto_maker(n->fname, NFTP_TYPE_ACK, 0, rmsg, rlen);
+		nftp_proto_maker(n->fname, NFTP_TYPE_ACK, n->id, 0, rmsg, rlen);
 		break;
 
 	case NFTP_TYPE_ACK:

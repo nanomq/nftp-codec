@@ -54,6 +54,7 @@ static int
 test_proto_handler()
 {
 	char * fname = "./demo.txt";
+	uint8_t key = 15;
 	uint8_t * r = NULL, * s = NULL;
 	size_t rlen, slen, blocks;
 
@@ -63,7 +64,7 @@ test_proto_handler()
 
 	// For sender
 	assert(0 == nftp_proto_send_start(fname));
-	nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, &s, &slen);
+	nftp_proto_maker(fname, NFTP_TYPE_HELLO, key, 0, &s, &slen);
 	assert(NULL != s);
 	assert(0 != slen);
 	test_send("HELLO", s, slen);
@@ -95,7 +96,7 @@ test_proto_handler()
 	if (s == NULL && slen == 0) {
 		assert(0 == nftp_file_blocks(fname, &blocks));
 		for (int i=1; i<=blocks; ++i) {
-			assert(0 == nftp_proto_maker(fname, NFTP_TYPE_FILE, i, &s, &slen));
+			assert(0 == nftp_proto_maker(fname, NFTP_TYPE_FILE, key, i, &s, &slen));
 			test_send("END", s, slen);
 			// Transfer
 			r = s; rlen = slen;
@@ -134,15 +135,16 @@ test_proto_maker_hello()
 	char *str = "It's a demo.\nIt's a demo.\n";
 	char *fpath = "./demo.txt";
 	char *fname = "demo.txt";
+	uint8_t key = 16;
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_HELLO, 0, &v, &len));
+	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_HELLO, key, 1, &v, &len));
 	assert(0 == nftp_decode(p, v, len));
 
 	assert(NFTP_TYPE_HELLO == p->type);
 	assert(len == p->len);
-	assert(0 == p->id);
+	assert(key == p->id);
 	assert(1 == p->blocks);
 	assert(strlen(fname) == p->namelen);
 	assert(0 == strcmp(fname, p->fname));
@@ -161,15 +163,16 @@ test_proto_maker_ack()
 	size_t len;
 	char * fpath = "./demo.txt";
 	char * fname = "demo.txt";
+	uint8_t key = 16;
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_ACK, 0, &v, &len));
+	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_ACK, key, 0, &v, &len));
 	assert(0 == nftp_decode(p, v, len));
 
 	assert(NFTP_TYPE_ACK == p->type);
 	assert(len == p->len);
-	assert(0 == p->id);
+	assert(key == p->id);
 	assert(NFTP_HASH((const uint8_t *)fname, strlen(fname)) == p->fileid);
 
 	assert(0 == nftp_free(p));
@@ -187,15 +190,16 @@ test_proto_maker_file()
 	char * fpath = "./demo.txt";
 	char * fname = "demo.txt";
 	char *str = "It's a demo.\nIt's a demo.\n";
+	uint8_t key = 16;
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_FILE, 1, &v, &len));
+	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_FILE, key, 0, &v, &len));
 	assert(0 == nftp_decode(p, v, len));
 
 	assert(NFTP_TYPE_END == p->type);
 	assert(len == p->len);
-	assert(1 == p->blockseq);
+	assert(0 == p->blockseq);
 	assert(NFTP_HASH((const uint8_t *)fname, strlen(fname)) == p->fileid);
 	assert(0 == strncmp(str, (char *)p->content, strlen(str)));
 
