@@ -148,9 +148,8 @@ nftp_proto_send_stop(char *fpath)
 	// TODO send something to stop the recver
 }
 
-// TODO user should pass a key to present a session of transmission.
 int
-nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
+nftp_proto_maker(char *fpath, int type, uint8_t key, size_t n, uint8_t **rmsg, size_t *rlen)
 {
 	int rv;
 	nftp * p;
@@ -167,7 +166,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	case NFTP_TYPE_HELLO:
 		p->type = NFTP_TYPE_HELLO;
 		p->len = 5 + 1 + 2 + 2 + strlen(fname) + 4;
-		p->id = 0; // TODO
+		p->id = key;
 		if (0 != (rv = nftp_file_size(fpath, &len)))
 			return rv;
 
@@ -182,7 +181,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 	case NFTP_TYPE_ACK:
 		p->type = NFTP_TYPE_ACK;
 		p->len = 6 + 4;
-		p->id = 0; // TODO
+		p->id = key;
 		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		break;
 
@@ -231,7 +230,7 @@ nftp_proto_maker(char *fpath, int type, size_t n, uint8_t **rmsg, size_t *rlen)
 // the msg is not comply with the nftp protocol, nftp will
 // ignore it.
 int
-nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
+nftp_proto_handler(uint8_t *msg, size_t len, uint8_t **rmsg, size_t *rlen)
 {
 	int             rv       = 1;
 	uint32_t        hashcode = 0;
@@ -246,7 +245,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 	if (0 != (rv = nftp_alloc(&n))) return rv;
 
 	// Set default return value
-	*retmsg = NULL;
+	*rmsg = NULL;
 	*rlen = 0;
 
 	if (0 != (rv = nftp_decode(n, msg, len))) return rv;
@@ -299,7 +298,7 @@ nftp_proto_handler(uint8_t * msg, size_t len, uint8_t **retmsg, size_t *rlen)
 		}
 		ctx->status = NFTP_STATUS_HELLO;
 
-		nftp_proto_maker(n->fname, NFTP_TYPE_ACK, 0, retmsg, rlen);
+		nftp_proto_maker(n->fname, NFTP_TYPE_ACK, 0, rmsg, rlen);
 		break;
 
 	case NFTP_TYPE_ACK:
