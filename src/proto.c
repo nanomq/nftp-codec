@@ -452,3 +452,9 @@ nftp_set_recvdir(char * dir)
 	return (0);
 }
 
+int
+test()
+{
+	printf("Hello World\n");
+	return 0;
+}
