@@ -107,7 +107,7 @@ nftp_file_size(char *fpath, size_t *sz)
 	size_t filesize;
 
 	if ((fp = fopen(fpath, "rb")) == NULL) {
-		nftp_fatal("open error");
+		nftp_fatal("open error [%s]", fpath);
 		return (NFTP_ERR_FILE);
 	}
 

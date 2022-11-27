@@ -25,8 +25,8 @@
 #define NFTP_TYPE_GIVEME  0x05
 
 #define NFTP_SIZE         32
-#define NFTP_BLOCK_SZ     (256 * 1024) // Maximal size of single package
-#define NFTP_FILES        32 // Receive up to 32 files at once
+#define NFTP_BLOCK_SZ     (32 * 1024) // Maximal size of single package
+#define NFTP_FILES        128 // Receive up to 32 files at once
 #define NFTP_HASH(p, n)   nftp_djb_hashn(p, n)
 #define NFTP_FNAME_LEN    64
 #define NFTP_FDIR_LEN     256
