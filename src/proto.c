@@ -28,17 +28,17 @@ struct file_cb {
 };
 
 struct buf {
-	uint8_t * body;
-	size_t    len;
+	char* body;
+	int   len;
 };
 
 HashTable files;
 nftp_vec *fcb_reg;
 
 struct nctx {
-	size_t          len;
-	size_t          cap;
-	size_t          nextid;
+	int             len;
+	int             cap;
+	int             nextid;
 	struct buf *    entries;
 	uint32_t        fileid;
 	uint32_t        hashcode;
@@ -149,13 +149,12 @@ nftp_proto_send_stop(char *fpath)
 }
 
 int
-nftp_proto_maker(char *fpath, int type, uint8_t key, size_t n, uint8_t **rmsg, size_t *rlen)
+nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 {
 	int rv;
 	nftp * p;
-	uint8_t *v;
-	size_t len, blocks;
-	char * fname;
+	int len, blocks;
+	char *v, *fname;
 
 	if (NULL == fpath) return (NFTP_ERR_FILEPATH);
 	if ((fname = nftp_file_bname(fpath)) == NULL)
@@ -167,7 +166,7 @@ nftp_proto_maker(char *fpath, int type, uint8_t key, size_t n, uint8_t **rmsg, s
 		p->type = NFTP_TYPE_HELLO;
 		p->len = 5 + 1 + 2 + 2 + strlen(fname) + 4;
 		p->id = key;
-		if (0 != (rv = nftp_file_size(fpath, &len)))
+		if (0 != (rv = nftp_file_size(fpath, (size_t *)&len)))
 			return rv;
 
 		p->blocks = (len/NFTP_BLOCK_SZ) + 1;
@@ -188,10 +187,10 @@ nftp_proto_maker(char *fpath, int type, uint8_t key, size_t n, uint8_t **rmsg, s
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (0 > n) return (NFTP_ERR_ID);
-		if (0 != (rv = nftp_file_readblk(fpath, n, (char **)&v, &len))) {
+		if (0 != (rv = nftp_file_readblk(fpath, n, (char **)&v, (size_t *)&len))) {
 			return rv;
 		}
-		if (0 != (rv = nftp_file_blocks(fpath, &blocks))) {
+		if (0 != (rv = nftp_file_blocks(fpath, (size_t *)&blocks))) {
 			return rv;
 		}
 		if (n+1 == blocks) {
@@ -214,7 +213,8 @@ nftp_proto_maker(char *fpath, int type, uint8_t key, size_t n, uint8_t **rmsg, s
 		break;
 	}
 
-	if (0 != (rv = nftp_encode(p, rmsg, rlen))) return rv;
+	if (0 != (rv = nftp_encode(p, (uint8_t **)rmsg, (size_t *)rlen)))
+		return rv;
 
 	if (NFTP_TYPE_END == p->type) {
 		nftp_proto_send_stop(fpath);
@@ -230,7 +230,7 @@ nftp_proto_maker(char *fpath, int type, uint8_t key, size_t n, uint8_t **rmsg, s
 // the msg is not comply with the nftp protocol, nftp will
 // ignore it.
 int
-nftp_proto_handler(uint8_t *msg, size_t len, uint8_t **rmsg, size_t *rlen)
+nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 {
 	int             rv       = 1;
 	uint32_t        hashcode = 0;
@@ -248,7 +248,7 @@ nftp_proto_handler(uint8_t *msg, size_t len, uint8_t **rmsg, size_t *rlen)
 	*rmsg = NULL;
 	*rlen = 0;
 
-	if (0 != (rv = nftp_decode(n, msg, len))) return rv;
+	if (0 != (rv = nftp_decode(n, (uint8_t *)msg, len))) return rv;
 
 	switch (n->type) {
 	case NFTP_TYPE_HELLO:

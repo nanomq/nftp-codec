@@ -39,10 +39,10 @@ test_proto()
 }
 
 static inline int
-test_send(char *s, uint8_t *v, size_t len) {
+test_send(char *s, char *v, int len) {
 	nftp_log("%s", s); v = v; len = len; return (0);}
 static inline int
-test_recv(char *s, uint8_t **vp, size_t *lenp) {
+test_recv(char *s, char **vp, int *lenp) {
 	nftp_log("%s", s); vp = vp; lenp = lenp; return (0);}
 
 static inline int
@@ -55,8 +55,8 @@ test_proto_handler()
 {
 	char * fname = "./demo.txt";
 	uint8_t key = 15;
-	uint8_t * r = NULL, * s = NULL;
-	size_t rlen, slen, blocks;
+	char * r = NULL, * s = NULL;
+	int rlen, slen, blocks;
 
 	// For recver
 	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv."));
@@ -94,7 +94,7 @@ test_proto_handler()
 
 	// File blocks transferring
 	if (s == NULL && slen == 0) {
-		assert(0 == nftp_file_blocks(fname, &blocks));
+		assert(0 == nftp_file_blocks(fname, (size_t *)&blocks));
 		for (int i=0; i < blocks; ++i) {
 			assert(0 == nftp_proto_maker(fname, NFTP_TYPE_FILE, key, i, &s, &slen));
 			test_send("END", s, slen);
@@ -129,8 +129,8 @@ test_proto_maker()
 static int
 test_proto_maker_hello()
 {
-	uint8_t * v;
-	size_t len;
+	char *v;
+	int   len;
 	nftp *p;
 	char *str = "It's a demo.\nIt's a demo.\n";
 	char *fpath = "./demo.txt";
@@ -158,9 +158,9 @@ test_proto_maker_hello()
 static int
 test_proto_maker_ack()
 {
-	nftp *p;
-	uint8_t * v;
-	size_t len;
+	nftp * p;
+	char * v;
+	int    len;
 	char * fpath = "./demo.txt";
 	char * fname = "demo.txt";
 	uint8_t key = 16;
@@ -184,12 +184,12 @@ test_proto_maker_ack()
 static int
 test_proto_maker_file()
 {
-	nftp *p;
-	uint8_t * v;
-	size_t len;
+	nftp * p;
+	char * v;
+	int    len;
 	char * fpath = "./demo.txt";
 	char * fname = "demo.txt";
-	char *str = "It's a demo.\nIt's a demo.\n";
+	char * str = "It's a demo.\nIt's a demo.\n";
 	uint8_t key = 16;
 
 	assert(0 == nftp_alloc(&p));

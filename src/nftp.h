@@ -227,8 +227,8 @@ int nftp_proto_send_stop(char *);
  *
  * @return, 0 if no errors. Or please refer to NFTP_ERR.
  */
-int nftp_proto_maker(char *fpath, int type, uint8_t key,
-        size_t n, uint8_t **rmsg, size_t *rlen);
+int nftp_proto_maker(char *fpath, int type, int key,
+        int n, char **rmsg, int *rlen);
 
 /*
  * This function is to handle the NFTP msg and return msg caller needed.
@@ -240,8 +240,7 @@ int nftp_proto_maker(char *fpath, int type, uint8_t key,
  *
  * @return, 0 if no errors. Or please refer to NFTP_ERR.
  */
-int nftp_proto_handler(uint8_t *msg, size_t len,
-        uint8_t **rmsg, size_t *rlen);
+int nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen);
 
 int nftp_proto_register(char *, int (*cb)(void *), void *);
 
