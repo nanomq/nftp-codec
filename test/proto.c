@@ -163,12 +163,12 @@ test_proto_maker_ack()
 	int    len;
 	char * fpath = "./demo.txt";
 	char * fname = "demo.txt";
-	uint8_t key = 16;
+	int    key = 16;
 
 	assert(0 == nftp_alloc(&p));
 
 	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_ACK, key, 0, &v, &len));
-	assert(0 == nftp_decode(p, v, len));
+	assert(0 == nftp_decode(p, (uint8_t *)v, (size_t)len));
 
 	assert(NFTP_TYPE_ACK == p->type);
 	assert(len == p->len);

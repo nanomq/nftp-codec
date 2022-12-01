@@ -7,6 +7,7 @@ set(TEST ON)
 
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
   add_definitions(-DDEBUG)
 endif(DEBUG)
 
