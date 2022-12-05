@@ -13,9 +13,9 @@
 #include "nftp.h"
 
 struct _vec {
-	size_t          cap; // capicity
-	size_t          len; // number of elements
-	size_t          low; // elements stored from here
+	int             cap; // capicity
+	int             len; // number of elements
+	int             low; // elements stored from here
 	void          **vec;
 	pthread_mutex_t mtx;
 };
@@ -23,6 +23,7 @@ struct _vec {
 static int
 resize(nftp_vec *v) // TODO
 {
+	(void) v;
 	return (0);
 }
 
@@ -104,7 +105,7 @@ nftp_vec_delete(nftp_vec *v, void **entryp, int pos)
 int
 nftp_vec_push(nftp_vec *v, void *entry, int flag)
 {
-	size_t pos = 0;
+	int pos = 0;
 
 	if (!v) return (NFTP_ERR_VEC);
 
@@ -136,7 +137,7 @@ nftp_vec_push(nftp_vec *v, void *entry, int flag)
 int
 nftp_vec_pop(nftp_vec *v, void **entryp, int flag)
 {
-	size_t pos = 0;
+	int pos = 0;
 
 	if (!v) return (NFTP_ERR_VEC);
 
@@ -198,8 +199,8 @@ nftp_vec_cat(nftp_vec *dv, nftp_vec *sv)
 	pthread_mutex_lock(&dv->mtx);
 	pthread_mutex_lock(&sv->mtx);
 
-	size_t idx = dv->low + dv->len;
-	for (uint32_t i = 0; i < sv->len; ++i)
+	int idx = dv->low + dv->len;
+	for (int i = 0; i < sv->len; ++i)
 		dv->vec[idx + i] = sv->vec[sv->low + i];
 
 	dv->len += sv->len;
@@ -210,13 +211,13 @@ nftp_vec_cat(nftp_vec *dv, nftp_vec *sv)
 	return (0);
 }
 
-size_t
+int
 nftp_vec_cap(nftp_vec *v)
 {
 	return v->cap;
 }
 
-size_t
+int
 nftp_vec_len(nftp_vec *v)
 {
 	return v->len;
