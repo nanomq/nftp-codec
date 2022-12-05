@@ -158,8 +158,8 @@ int nftp_vec_pop(nftp_vec *, void **, int);
 int nftp_vec_get(nftp_vec *, int, void **);
 int nftp_vec_getidx(nftp_vec *, void *, int*);
 int nftp_vec_cat(nftp_vec *, nftp_vec *);
-size_t nftp_vec_cap(nftp_vec *);
-size_t nftp_vec_len(nftp_vec *);
+int nftp_vec_cap(nftp_vec *);
+int nftp_vec_len(nftp_vec *);
 // Iterator
 nftp_iter * nftp_vec_iter(nftp_vec *);
 

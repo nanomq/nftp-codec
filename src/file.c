@@ -149,9 +149,9 @@ nftp_file_readblk(char *fpath, int n, char **strp, size_t *sz)
 	fseek(fp, 0, SEEK_END);
 	filesize = ftell(fp);
 
-	if (n > filesize/NFTP_BLOCK_SZ) {
+	if (n > (int)filesize/NFTP_BLOCK_SZ) {
 		return (NFTP_ERR_BLOCKS);
-	} else if (n == filesize/NFTP_BLOCK_SZ) {
+	} else if (n == (int)filesize/NFTP_BLOCK_SZ) {
 		blksz = filesize - n*NFTP_BLOCK_SZ;
 	} else {
 		blksz = NFTP_BLOCK_SZ;
@@ -227,7 +227,7 @@ int
 nftp_file_append(char * fpath, char * str, size_t sz)
 {
 	FILE * fp;
-	int    filesize;
+	size_t filesize;
 
 	if ((fp = fopen(fpath, "ab")) == NULL) {
 		nftp_fatal("open error");
@@ -272,7 +272,7 @@ nftp_file_hash(char *fpath, uint32_t *hashval)
 	}
 
 	while ((fgets(txt, sz, fp)) != NULL) {
-		for (pos = 0; pos < strlen(txt); ++pos) {
+		for (pos = 0; pos < (int)strlen(txt); ++pos) {
 			res = 33 * res ^ (uint8_t) txt[pos];
 		}
 	}
