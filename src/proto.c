@@ -118,6 +118,11 @@ int
 nftp_proto_fini()
 {
 	int rv;
+	struct file_cb *fcb;
+	while (0 != nftp_vec_len(fcb_reg)) {
+		nftp_vec_pop(fcb_reg, &fcb, NFTP_HEAD);
+		free(fcb);
+	}
 	if (0 != (rv = nftp_vec_free(fcb_reg)))
 		return rv;
 
@@ -155,7 +160,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 {
 	int rv;
 	nftp * p;
-	int len, blocks;
+	size_t len, blocks;
 	char *v, *fname;
 
 	if (NULL == fpath) return (NFTP_ERR_FILEPATH);
@@ -167,8 +172,8 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 	case NFTP_TYPE_HELLO:
 		p->type = NFTP_TYPE_HELLO;
 		p->len = 5 + 1 + 2 + 2 + strlen(fname) + 4;
-		p->id = key;
-		if (0 != (rv = nftp_file_size(fpath, (size_t *)&len)))
+		p->id = 0xff & key;
+		if (0 != (rv = nftp_file_size(fpath, &len)))
 			return rv;
 
 		p->blocks = (len/NFTP_BLOCK_SZ) + 1;
@@ -182,17 +187,17 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 	case NFTP_TYPE_ACK:
 		p->type = NFTP_TYPE_ACK;
 		p->len = 6 + 4;
-		p->id = key;
+		p->id = 0xff & key;
 		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		break;
 
 	case NFTP_TYPE_FILE:
 	case NFTP_TYPE_END:
 		if (0 > n) return (NFTP_ERR_ID);
-		if (0 != (rv = nftp_file_readblk(fpath, n, (char **)&v, (size_t *)&len))) {
+		if (0 != (rv = nftp_file_readblk(fpath, n, (char **)&v, &len))) {
 			return rv;
 		}
-		if (0 != (rv = nftp_file_blocks(fpath, (size_t *)&blocks))) {
+		if (0 != (rv = nftp_file_blocks(fpath, &blocks))) {
 			return rv;
 		}
 		if (n+1 == blocks) {
@@ -215,8 +220,10 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		break;
 	}
 
-	if (0 != (rv = nftp_encode(p, (uint8_t **)rmsg, (size_t *)rlen)))
+	size_t alen;
+	if (0 != (rv = nftp_encode(p, (uint8_t **)rmsg, &alen)))
 		return rv;
+	*rlen = alen;
 
 	if (NFTP_TYPE_END == p->type) {
 		nftp_proto_send_stop(fpath);
