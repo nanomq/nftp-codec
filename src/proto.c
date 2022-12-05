@@ -59,7 +59,7 @@ nctx_alloc(size_t sz)
 		free(n);
 		return NULL;
 	}
-	for (int i=0; i<sz; ++i) {
+	for (size_t i=0; i<sz; ++i) {
 		n->entries[i].len = 0;
 		n->entries[i].body = NULL;
 	}
@@ -145,7 +145,9 @@ nftp_proto_send_start(char *fpath)
 int
 nftp_proto_send_stop(char *fpath)
 {
+	(void) fpath;
 	// TODO send something to stop the recver
+	return 0;
 }
 
 int
@@ -204,7 +206,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		p->blockseq = n;
 
 		p->ctlen = len;
-		p->content = v;
+		p->content = (uint8_t *)v;
 		break;
 
 	case NFTP_TYPE_GIVEME:
@@ -317,7 +319,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		nftp_file_fullpath(fullpath, recvdir, partname);
 
 		if (n->blockseq == ctx->nextid) {
-			if (0 != nftp_file_append(fullpath, n->content, n->ctlen)) {
+			if (0 != nftp_file_append(fullpath, (char *)n->content, n->ctlen)) {
 				nftp_fatal("Error in file append [%s]", fullpath);
 				return (NFTP_ERR_FILE);
 			}
@@ -339,12 +341,12 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		} else {
 			// Just store it
 			ctx->entries[n->blockseq].len = n->ctlen;
-			ctx->entries[n->blockseq].body = n->content;
+			ctx->entries[n->blockseq].body = (char *)n->content;
 			n->content = NULL; // avoid be free
 		}
 
 		ctx->len ++;
-		nftp_log("Process(recv) [%s]:[%ld/%ld]\n",
+		nftp_log("Process(recv) [%s]:[%d/%d]\n",
 			ctx->wfname, ctx->len, ctx->cap);
 
 		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
