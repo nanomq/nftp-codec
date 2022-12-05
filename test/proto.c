@@ -56,7 +56,8 @@ test_proto_handler()
 	char * fname = "./demo.txt";
 	uint8_t key = 15;
 	char * r = NULL, * s = NULL;
-	int rlen, slen, blocks;
+	int rlen, slen;
+	size_t blocks;
 
 	// For recver
 	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv."));
