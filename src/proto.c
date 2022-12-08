@@ -121,6 +121,7 @@ nftp_proto_fini()
 	struct file_cb *fcb;
 	while (0 != nftp_vec_len(fcb_reg)) {
 		nftp_vec_pop(fcb_reg, &fcb, NFTP_HEAD);
+		free(fcb->fname);
 		free(fcb);
 	}
 	if (0 != (rv = nftp_vec_free(fcb_reg)))
