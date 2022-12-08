@@ -82,5 +82,7 @@ test_vector()
 
 	assert(0 == nftp_vec_free(v1));
 	assert(0 == nftp_vec_free(v2));
+
+	return 0;
 }
 

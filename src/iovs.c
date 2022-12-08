@@ -25,6 +25,8 @@ struct _iovs {
 static int
 resize(nftp_iovs *iovs, size_t sz)
 {
+	(void)iovs;
+	(void)sz;
 	return (0);
 }
 
@@ -73,7 +75,7 @@ nftp_iovs_insert(nftp_iovs *iovs, void *ptr, size_t len, size_t pos)
 
 	pthread_mutex_lock(&iovs->mtx);
 
-	for (int i = iovs->low + iovs->len; i > iovs->low + pos; --i) {
+	for (size_t i = iovs->low + iovs->len; i > iovs->low + pos; --i) {
 		iovs->iovs[i].iov_base = iovs->iovs[i - 1].iov_base;
 		iovs->iovs[i].iov_len  = iovs->iovs[i - 1].iov_len;
 	}
@@ -179,8 +181,8 @@ nftp_iovs_cat(nftp_iovs *dest, nftp_iovs *src)
 	pthread_mutex_lock(&d->mtx);
 	pthread_mutex_lock(&s->mtx);
 
-	int idx = d->low + d->len;
-	for (int i = 0; i < s->len; ++i) {
+	size_t idx = d->low + d->len;
+	for (size_t i = 0; i < s->len; ++i) {
 		d->iovs[idx + i].iov_base = s->iovs[s->low + i].iov_base;
 		d->iovs[idx + i].iov_len  = s->iovs[s->low + i].iov_len;
 	}
@@ -217,7 +219,7 @@ nftp_iovs2stream(nftp_iovs *iovs, uint8_t **strp, size_t *len)
 
 	pthread_mutex_lock(&iovs->mtx);
 
-	for (int i=iovs->low; i<iovs->low + iovs->len; ++i) {
+	for (size_t i=iovs->low; i<iovs->low + iovs->len; ++i) {
 		memcpy(str + pos, iovs->iovs[i].iov_base, iovs->iovs[i].iov_len);
 		pos += iovs->iovs[i].iov_len;
 	}
@@ -235,7 +237,7 @@ iovs_iter_next(nftp_iter *self)
 {
 	nftp_iovs * iovs = self->matrix;
 
-	if (self->key == iovs->len - 1) {
+	if (self->key == (int)iovs->len - 1) {
 		self->key = NFTP_TAIL;
 		self->val = NULL;
 	} else {

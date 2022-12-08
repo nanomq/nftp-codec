@@ -29,6 +29,7 @@ test_codec()
 	test_codec_ack();
 	test_codec_file();
 	test_codec_end();
+	test_codec_giveme();
 
 	return (0);
 }
@@ -60,7 +61,7 @@ test_codec_hello()
 
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(sizeof(demo1_hello) == len);
-	for (int i=0; i<len; i++) {
+	for (size_t i=0; i<len; i++) {
 		assert(demo1_hello[i] == v[i]);
 	}
 
@@ -92,7 +93,7 @@ test_codec_ack()
 
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(sizeof(demo1_ack) == len);
-	for (int i=0; i<len; i++) {
+	for (size_t i=0; i<len; i++) {
 		assert(demo1_ack[i] == v[i]);
 	}
 
@@ -128,7 +129,7 @@ test_codec_file()
 
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(sizeof(demo1_file) == len);
-	for (int i=0; i<len; i++) {
+	for (size_t i=0; i<len; i++) {
 		assert(demo1_file[i] == v[i]);
 	}
 
@@ -162,7 +163,7 @@ test_codec_end()
 
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(sizeof(demo1_end) == len);
-	for (int i=0; i<len; i++) {
+	for (size_t i=0; i<len; i++) {
 		assert(demo1_end[i] == v[i]);
 	}
 
@@ -196,7 +197,7 @@ test_codec_giveme()
 
 	assert(0 == nftp_encode(p, &v, &len));
 	assert(12 == len);
-	for (int i=0; i<len; i++) {
+	for (size_t i=0; i<len; i++) {
 		assert(demo1_giveme[i] == v[i]);
 	}
 
