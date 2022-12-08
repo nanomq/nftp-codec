@@ -120,7 +120,7 @@ nftp_proto_fini()
 	int rv;
 	struct file_cb *fcb;
 	while (0 != nftp_vec_len(fcb_reg)) {
-		nftp_vec_pop(fcb_reg, &fcb, NFTP_HEAD);
+		nftp_vec_pop(fcb_reg, (void **)&fcb, NFTP_HEAD);
 		free(fcb->fname);
 		free(fcb);
 	}
@@ -177,7 +177,13 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		if (0 != (rv = nftp_file_size(fpath, &len)))
 			return rv;
 
-		p->blocks = (len/NFTP_BLOCK_SZ) + 1;
+		blocks = (len/NFTP_BLOCK_SZ) + 1;
+		if (blocks > (0xFFFF)) {
+			nftp_log("File is too large (MAXSIZE: %dKB).",
+			    (NFTP_BLOCK_SZ * NFTP_BLOCK_NUM / 1024));
+			return NFTP_ERR_FILE;
+		}
+		p->blocks = (uint16_t)blocks;
 		p->fname = fname;
 		p->namelen = strlen(fname);
 
@@ -201,7 +207,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		if (0 != (rv = nftp_file_blocks(fpath, &blocks))) {
 			return rv;
 		}
-		if (n+1 == blocks) {
+		if (n+1 == (int)blocks) {
 			p->type = NFTP_TYPE_END;
 		} else {
 			p->type = NFTP_TYPE_FILE;
