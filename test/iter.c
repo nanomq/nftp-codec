@@ -42,6 +42,7 @@ test_iter()
 	assert(NULL == iter->val);
 
 	nftp_vec_free(v);
+	nftp_iter_free(iter);
 
 	assert(0 == nftp_iovs_alloc(&iovs));
 	assert(0 == nftp_iovs_append(iovs, &n1, 1));
@@ -67,7 +68,8 @@ test_iter()
 	assert(NFTP_TAIL == iter->key);
 	assert(NULL == iter->val);
 
-	assert(0 == nftp_iovs_free(iovs));
+	nftp_iovs_free(iovs);
+	nftp_iter_free(iter);
 
 	return (0);
 }
