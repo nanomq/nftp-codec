@@ -203,9 +203,10 @@ test_codec_giveme()
 		assert(demo1_giveme[i] == v[i]);
 	}
 
-	assert(0 == nftp_free(p));
 	free(v);
 	*/
+	assert(0 == nftp_free(p));
+
 	return (0);
 }
 
