@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "nftp.h"
+#include "test.h"
 
 static int test_proto_maker();
 static int test_proto_maker_hello();

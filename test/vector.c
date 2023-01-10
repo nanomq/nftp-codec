@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include "nftp.h"
+#include "test.h"
 
 int
 test_vector()
