@@ -113,6 +113,7 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		break;
 
 	case NFTP_TYPE_GIVEME:
+		p->id = *(v + pos); pos += 1;
 		if (p->id == 0) return (NFTP_ERR_ID);
 		nftp_get_u16(v + pos, p->namelen); pos += 2;
 

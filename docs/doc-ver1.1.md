@@ -94,7 +94,7 @@ The GIVEME packet is use to ask a series of packets with certain IDs from Recver
 | ------------- | ---------------- | ----------------------------------- |
 | Type          | 1                | GIVEME(0x05)                        |
 | Length        | 4                | The size of this packet.            |
-| Packet Id     | 1                | File Id. As same as the one in ACK. |
+| Packet Id     | 4                | File Id. As same as the one in ACK. |
 | Blocks number | 2                | Number of blocks we need.           |
 | Blocks info   | 2*(Blocks count) | A series of packets' Seq.           |
 
