@@ -261,24 +261,31 @@ int
 nftp_file_hash(char *fpath, uint32_t *hashval)
 {
 	FILE *   fp;
-	size_t   sz = 1000;
-	char     txt[1000];
-	int      pos;
-	uint32_t res = 5381;
+	size_t   sz;
+	char *   str;
+	int      rv;
+
+	if (0 != (rv = nftp_file_size(fpath, &sz)))
+		return rv;
+
+	if ((str = malloc(sz)) == NULL)
+		return (NFTP_ERR_MEM);
 
 	if ((fp = fopen(fpath, "rb")) == NULL) {
+		nftp_fatal("open error");
+		return (NFTP_ERR_FILE);
+	}
+
+	if (sz != fread(str, 1, sz, fp)) {
 		nftp_fatal("read error");
 		return (NFTP_ERR_FILE);
 	}
 
-	while ((fgets(txt, sz, fp)) != NULL) {
-		for (pos = 0; pos < (int)strlen(txt); ++pos) {
-			res = 33 * res ^ (uint8_t) txt[pos];
-		}
-	}
+	*hashval = NFTP_HASH(str, sz);
 
 	fclose(fp);
-	*hashval = res;
+	free(str);
+
 	return (0);
 }
 
