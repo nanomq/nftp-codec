@@ -13,8 +13,9 @@ if(DEBUG)
   add_link_options(-fsanitize=address)
 endif(DEBUG)
 
-add_subdirectory(hashtable)
+#add_subdirectory(hashtable)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hashtable)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(SOURCES 
   src/hash.c
@@ -24,17 +25,15 @@ set(SOURCES
   src/iter.c
   src/codec.c
   src/proto.c
-  src/nftp.h
-  src/log4nftp.h
+  hashtable/hashtable.c
 )
-
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_library(nftp-codec SHARED ${SOURCES})
 add_library(nftp-codec-static STATIC ${SOURCES})
 
 if(TEST)
   add_executable(test
+	  test/test.h
 	  test/test.c
 	  test/hash.c
 	  test/file.c
@@ -43,7 +42,7 @@ if(TEST)
 	  test/iter.c
 	  test/codec.c
 	  test/proto.c)
-  target_link_libraries(test nftp-codec hashtable)
+  target_link_libraries(test nftp-codec)
 endif(TEST)
 
 if(NOT DEBUG)
