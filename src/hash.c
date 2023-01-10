@@ -32,7 +32,7 @@ nftp_fnv1a_hashn(const uint8_t * cp, size_t n)
 }
 
 uint8_t
-nftp_crc(uint8_t *data, size_t n)
+nftp_crc(const uint8_t *data, size_t n)
 {
 	uint8_t crc = 0xff;
 	size_t  i, j;
@@ -111,7 +111,7 @@ const uint32_t crc_table[256] = {
 #define DO8(buf)  DO4(buf); DO4(buf);
 
 uint32_t
-nftp_crc32(uint8_t *data, size_t n)
+nftp_crc32(const uint8_t *data, size_t n)
 {
 	uint32_t crc = 0xffffffff;
 	while (n >= 8) {
