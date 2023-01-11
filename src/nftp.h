@@ -28,7 +28,7 @@
 #define NFTP_BLOCK_SZ     (32 * 1024) // Maximal size of single package
 #define NFTP_BLOCK_NUM    (0xFFFF) // Maximal number of blocks
 #define NFTP_FILES        128 // Receive up to 32 files at once
-#define NFTP_HASH(p, n)   nftp_crc32(p, n)
+#define NFTP_HASH(p, n)   nftp_crc32c(p, n)
 #define NFTP_FNAME_LEN    64
 #define NFTP_FDIR_LEN     256
 
@@ -124,6 +124,7 @@ uint32_t nftp_djb_hashn(const uint8_t *, size_t);
 uint32_t nftp_fnv1a_hashn(const uint8_t *, size_t);
 uint8_t  nftp_crc(const uint8_t *, size_t);
 uint32_t nftp_crc32(const uint8_t *, size_t);
+uint32_t nftp_crc32c(const uint8_t *, size_t);
 
 char * nftp_file_bname(char *);
 char * nftp_file_path(char *);

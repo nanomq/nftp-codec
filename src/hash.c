@@ -138,3 +138,81 @@ nftp_crc32(const uint8_t *data, size_t n)
 	return crc ^ 0xffffffff;
 }
 
+/* CRC32C from https://github.com/confluentinc/librdkafka/blob/master/src/crc32c.c */
+#define POLY 0x82f63b78
+static uint32_t crc32c_table[8][256];
+static int      crc32c_init = 0;
+
+/* Construct table for software CRC-32C calculation. */
+static void crc32c_init_sw(void)
+{
+    uint32_t n, crc, k;
+
+    for (n = 0; n < 256; n++) {
+        crc = n;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc = crc & 1 ? (crc >> 1) ^ POLY : crc >> 1;
+        crc32c_table[0][n] = crc;
+    }
+    for (n = 0; n < 256; n++) {
+        crc = crc32c_table[0][n];
+        for (k = 1; k < 8; k++) {
+            crc = crc32c_table[0][crc & 0xff] ^ (crc >> 8);
+            crc32c_table[k][n] = crc;
+        }
+    }
+}
+
+/* Table-driven software version as a fall-back.  This is about 15 times slower
+   than using the hardware instructions.  This assumes little-endian integers,
+   as is the case on Intel processors that the assembler code here is for. */
+static uint32_t crc32c_sw(uint32_t crci, const void *buf, size_t len)
+{
+    const unsigned char *next = buf;
+    uint64_t crc;
+
+    crc = crci ^ 0xffffffff;
+    while (len && ((uintptr_t)next & 7) != 0) {
+        crc = crc32c_table[0][(crc ^ *next++) & 0xff] ^ (crc >> 8);
+        len--;
+    }
+    while (len >= 8) {
+        /* Alignment-safe */
+        uint64_t ncopy;
+        memcpy(&ncopy, next, sizeof(ncopy));
+        crc ^= le64toh(ncopy);
+        crc = crc32c_table[7][crc & 0xff] ^
+              crc32c_table[6][(crc >> 8) & 0xff] ^
+              crc32c_table[5][(crc >> 16) & 0xff] ^
+              crc32c_table[4][(crc >> 24) & 0xff] ^
+              crc32c_table[3][(crc >> 32) & 0xff] ^
+              crc32c_table[2][(crc >> 40) & 0xff] ^
+              crc32c_table[1][(crc >> 48) & 0xff] ^
+              crc32c_table[0][crc >> 56];
+        next += 8;
+        len -= 8;
+    }
+    while (len) {
+        crc = crc32c_table[0][(crc ^ *next++) & 0xff] ^ (crc >> 8);
+        len--;
+    }
+    return (uint32_t)crc ^ 0xffffffff;
+}
+
+uint32_t
+nftp_crc32c(const uint8_t *data, size_t n)
+{
+	if (crc32c_init == 0) {
+		crc32c_init_sw();
+		crc32c_init = 1;
+	}
+
+	return crc32c_sw(0, (void *)data, n);
+}
+
