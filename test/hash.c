@@ -24,6 +24,10 @@ test_hash()
 	assert(nftp_crc((uint8_t *) "asdfghjkl", 9) ==
 	    nftp_crc((uint8_t *) "asdfghjkl", 9));
 	assert(nftp_crc32((uint8_t *) "abcd", 4) == 3984772369);
+	assert(nftp_crc32c((uint8_t *) "small-a.txt", 11) == 215792439);
+	assert(nftp_crc32c((uint8_t *) "small-a.", 8) == 1639393426);
+	assert(nftp_crc32c((uint8_t *) "small-", 6) == 4099902165);
+	assert(nftp_crc32c((uint8_t *) "small", 5) == 2128476489);
 
 	return (0);
 }
