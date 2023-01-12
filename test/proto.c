@@ -196,7 +196,7 @@ test_proto_maker_file()
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_FILE, key, 0, &v, &len));
+	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_END, key, 0, &v, &len));
 	assert(0 == nftp_decode(p, v, len));
 
 	assert(NFTP_TYPE_END == p->type);
