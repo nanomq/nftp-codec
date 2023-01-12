@@ -115,6 +115,8 @@ nftp_file_size(char *fpath, size_t *sz)
 	filesize = ftell(fp);
 	rewind(fp);
 
+	fclose(fp);
+
 	*sz = filesize;
 	return (0);
 }
@@ -281,7 +283,7 @@ nftp_file_hash(char *fpath, uint32_t *hashval)
 		return (NFTP_ERR_FILE);
 	}
 
-	*hashval = NFTP_HASH(str, sz);
+	*hashval = NFTP_HASH((const uint8_t *)str, sz);
 
 	fclose(fp);
 	free(str);
