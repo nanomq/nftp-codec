@@ -63,7 +63,7 @@ nftp_crc(const uint8_t *data, size_t n)
 
 /* Refer. https://homes.cs.washington.edu/~suciu/XMLTK/xmill/www/XMILL/html/crc32_8c-source.html */
 /* This crc table is created with polynomial (0xedb88320L) */
-const uint32_t crc_table[256] = {
+const uint32_t crc32_table[256] = {
   0x00000000L, 0x77073096L, 0xee0e612cL, 0x990951baL, 0x076dc419L,
   0x706af48fL, 0xe963a535L, 0x9e6495a3L, 0x0edb8832L, 0x79dcb8a4L,
   0xe0d5e91eL, 0x97d2d988L, 0x09b64c2bL, 0x7eb17cbdL, 0xe7b82d07L,
@@ -118,22 +118,24 @@ const uint32_t crc_table[256] = {
   0x2d02ef8dL
 };
 
-#define DO1(buf) crc = crc_table[((int)crc ^ (*buf++)) & 0xff] ^ (crc >> 8);
-#define DO2(buf)  DO1(buf); DO1(buf);
-#define DO4(buf)  DO2(buf); DO2(buf);
-#define DO8(buf)  DO4(buf); DO4(buf);
-
 uint32_t
 nftp_crc32(const uint8_t *data, size_t n)
 {
 	uint32_t crc = 0xffffffff;
 	while (n >= 8) {
-		DO8(data);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
+		crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
 		n -= 8;
 	}
 	if (n)
 		do {
-			DO1(data);
+			crc = crc32_table[((int)crc ^ (*data++)) & 0xff] ^ (crc >> 8);
 		} while (--n);
 	return crc ^ 0xffffffff;
 }
