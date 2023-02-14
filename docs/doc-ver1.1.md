@@ -9,7 +9,7 @@
 | ACK    | 0x02        | An acknowledge of HELLO packet.                | Recver -> Sender |
 | FILE   | 0x03        | The FILE packet contains the contents of file. | Sender -> Recver |
 | END    | 0x04        | The last packet contain contents of file.      | Sender -> Recver |
-| GIVEME | 0x05        | Ask a packet with certain ID.                  | Recver -> Sender |
+| GIVEME | 0x05        | Ask packets with certain IDs.                  | Recver -> Sender |
 
 ## Details of Packets
 
@@ -94,11 +94,8 @@ The GIVEME packet is use to ask a series of packets with certain IDs from Recver
 | ------------- | ---------------- | ----------------------------------- |
 | Type          | 1                | GIVEME(0x05)                        |
 | Length        | 4                | The size of this packet.            |
-| Packet Id     | 4                | File Id. As same as the one in ACK. |
-| Blocks number | 2                | Number of blocks we need.           |
-| Blocks info   | 2*(Blocks count) | A series of packets' Seq.           |
+| File Id       | 4                | File Id. As same as the one in ACK. |
+| Blocks bitmap | Blocks / 8       | Each bit represent a packet.        |
 
 Recver **MUST** drop it If received a GIVEME packet.
-
-Check the Blocks number. The Blocks number **MUST NOT** be 0. Or we should stop transferring.
 
