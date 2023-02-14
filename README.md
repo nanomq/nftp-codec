@@ -14,7 +14,7 @@ It's a lightweight ftp parser, and provide a convenient **maker & handler** mech
 
 * Support asynchronous send / recv
 
-* NFTP Version 1.0 standard docs are [Here](https://github.com/nanomq/nftp-codec/blob/main/docs/doc-ver1.0.md)
+* NFTP Version 1.1 standard docs are [Here](https://github.com/nanomq/nftp-codec/blob/main/docs/doc-ver1.1.md)
 
 ## Quick start
 
@@ -33,8 +33,9 @@ int sender() {
 
 	nftp_proto_init();
 	nftp_proto_send_start(fname);
-	nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, &s, &slen);
+	nftp_proto_maker(fname, NFTP_TYPE_HELLO, 0, 0, &s, &slen);
 	test_send(s, slen); // your send function. for example tcp_send()
+	free(s);
 
 	// waiting for ack
 	test_recv(&r, &rlen); // your recv function. for example tcp_recv();
@@ -47,9 +48,9 @@ int sender() {
 
 	nftp_file_blocks(fname, &blocks);
 
-	// Note. index from 1, and end with blocks
-	for (int i=1; i<=blocks; ++i) {
-		nftp_proto_maker(fname, NFTP_TYPE_FILE, i, &s, &slen);
+	// Note. index start from 0, and end with blocks-1
+	for (int i=0; i<blocks; ++i) {
+		nftp_proto_maker(fname, NFTP_TYPE_FILE, 0, i, &s, &slen);
 		test_send(s, slen);
 		free(s);
 	}
