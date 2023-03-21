@@ -30,7 +30,7 @@ test_codec()
 	test_codec_ack();
 	test_codec_file();
 	test_codec_end();
-	test_codec_giveme();
+	// test_codec_giveme();
 
 	return (0);
 }

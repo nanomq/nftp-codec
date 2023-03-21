@@ -113,14 +113,11 @@ nftp_decode(nftp *p, uint8_t *v, size_t len)
 		break;
 
 	case NFTP_TYPE_GIVEME:
-		p->id = *(v + pos); pos += 1;
-		if (p->id == 0) return (NFTP_ERR_ID);
-		nftp_get_u16(v + pos, p->namelen); pos += 2;
+		nftp_get_u32(v + pos, p->fileid); pos += 4;
 
-		if ((p->fname = malloc(sizeof(char) * (1 + p->namelen))) == NULL)
-			return (NFTP_ERR_MEM);
-		memcpy(p->fname, v + pos, p->namelen); pos += p->namelen;
-		p->fname[p->namelen] = '\0';
+		// TODO here we still according the standard in ver1.0
+		// Or the API (nftp_handler) needs to be update.
+		nftp_get_u16(v + pos, p->blockseq); pos += 2;
 		break;
 
 	default:
@@ -180,7 +177,15 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		break;
 
 	case NFTP_TYPE_GIVEME:
-		if (p->id == 0) return (NFTP_ERR_ID);
+		nftp_put_u32(p->exbuf + 4, p->fileid);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 4))
+			goto error;
+
+		nftp_put_u16(p->exbuf + 8, p->blockseq);
+		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 8), 2))
+			goto error;
+
+
 
 		nftp_put_u16(p->exbuf + 4, p->namelen);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
