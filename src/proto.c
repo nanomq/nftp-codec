@@ -91,8 +91,8 @@ static void
 nctx_free_cb(void *k, void *v, void *u)
 {
 	struct nctx ** vp = v;
-	k = k;
-	u = u;
+	(void )k;
+	(void )u;
 	if (vp) {
 		nctx_free(*vp);
 	}
@@ -217,6 +217,14 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		break;
 
 	case NFTP_TYPE_GIVEME:
+		if (0 > n) return (NFTP_ERR_ID);
+		p->type = NFTP_TYPE_GIVEME;
+
+		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
+
+		p->blockseq = n;
+		break;
+
 	default:
 		nftp_fatal("NOT SUPPORTED");
 		break;
@@ -408,6 +416,19 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		break;
 
 	case NFTP_TYPE_GIVEME:
+		if (!ht_contains(&files, &n->fileid)) {
+			nftp_fatal("Not found fileid [%d]", n->fileid);
+			return NFTP_ERR_HT;
+		}
+		ctx = *((struct nctx **)ht_lookup(&files, &n->fileid));
+
+		nftp_file_partname(partname, ctx->wfname);
+		nftp_file_fullpath(fullpath, recvdir, partname);
+
+		nftp_proto_maker(fullpath, NFTP_TYPE_FILE, n->fileid, n->blockseq, rmsg, rlen);
+
+		break;
+
 	default:
 		nftp_fatal("NOT SUPPORTED");
 		break;
