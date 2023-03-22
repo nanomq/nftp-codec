@@ -90,12 +90,15 @@ The END Packet is the last packet contain contents of file. It means the ending 
 
 The GIVEME packet is use to ask a series of packets with certain IDs from Recver. 
 
-| Name          | Length(Byte)     | Description                         |
-| ------------- | ---------------- | ----------------------------------- |
-| Type          | 1                | GIVEME(0x05)                        |
-| Length        | 4                | The size of this packet.            |
-| File Id       | 4                | File Id. As same as the one in ACK. |
-| Blocks bitmap | Blocks / 8       | Each bit represent a packet.        |
+| Name          | Length(Byte)     | Description                          |
+| ------------- | ---------------- | ------------------------------------ |
+| Type          | 1                | GIVEME(0x05)                         |
+| Length        | 4                | The size of this packet.             |
+| File Id       | 4                | File Id. As same as the one in ACK.  |
+| Blockseq      | 2                | The blockseq of the required packet. |
+
+**Asking multiple files at once is not supported now :(**
+In the next version of nftp. Ask multiple files will be supported. And the nftp\_handler() API may have a change.
 
 Recver **MUST** drop it If received a GIVEME packet.
 
