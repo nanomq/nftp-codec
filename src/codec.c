@@ -184,14 +184,6 @@ nftp_encode_iovs(nftp * p, nftp_iovs * iovs)
 		nftp_put_u16(p->exbuf + 8, p->blockseq);
 		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 8), 2))
 			goto error;
-
-
-
-		nftp_put_u16(p->exbuf + 4, p->namelen);
-		if (0 != nftp_iovs_append(iovs, (void *)(p->exbuf + 4), 2) ||
-		    0 != nftp_iovs_append(iovs, (void *)p->fname, p->namelen)) {
-			goto error;
-		}
 		break;
 
 	default:
