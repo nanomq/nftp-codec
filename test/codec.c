@@ -30,7 +30,7 @@ test_codec()
 	test_codec_ack();
 	test_codec_file();
 	test_codec_end();
-	// test_codec_giveme();
+	test_codec_giveme();
 
 	return (0);
 }
@@ -182,30 +182,28 @@ test_codec_giveme()
 	uint8_t *v;
 
 	uint8_t demo1_giveme[] = {
-		0x05, 0x00, 0x00, 0x00, 0x0c, 0x02, // type & length
-		0x00, 0x04, 0x61, 0x62, 0x2e, 0x63, // file "ab.c"
+		0x05, 0x00, 0x00, 0x00, 0x0b,       // type & length
+		0x7c, 0x6d, 0x8b, 0xab,             // fileid
+		0x00, 0x02,                         // blockseq
 	};
 
 	assert(0 == nftp_alloc(&p));
 
-	assert(0 == nftp_decode(p, demo1_giveme, 12));
+	assert(0 == nftp_decode(p, demo1_giveme, sizeof(demo1_giveme)));
 
 	assert(NFTP_TYPE_GIVEME == p->type);
-	assert(12 == p->len);
-	assert(2 == p->id);
-	assert(0 == strcmp("ab.c", p->fname));
-	assert(4 == p->namelen);
+	assert(sizeof(demo1_giveme) == p->len);
+	assert(((0x7c << 24) + (0x6d << 16) + (0x8b << 8) + (0xab)) == p->fileid);
+	assert(2 == p->blockseq);
 
-	/*
 	assert(0 == nftp_encode(p, &v, &len));
-	assert(12 == len);
+	assert(sizeof(demo1_giveme) == len);
 	for (size_t i=0; i<len; i++) {
 		assert(demo1_giveme[i] == v[i]);
 	}
 
-	free(v);
-	*/
 	assert(0 == nftp_free(p));
+	free(v);
 
 	return (0);
 }
