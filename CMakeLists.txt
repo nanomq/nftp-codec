@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(nftp-codec)
 
-set(DEBUG ON)
+set(DEBUG OFF)
 set(TEST ON)
 
 if(DEBUG)
@@ -46,5 +46,5 @@ if(TEST)
 endif(TEST)
 
 if(NOT DEBUG)
-  target_compile_options(nftp-codec PUBLIC -O3 -Os -g)
+  target_compile_options(nftp-codec PUBLIC -O3 -Os)
 endif()
