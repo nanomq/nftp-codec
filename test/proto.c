@@ -21,6 +21,7 @@ static int test_proto_maker_hello();
 static int test_proto_maker_ack();
 static int test_proto_maker_file();
 static int test_proto_maker_end();
+static int test_proto_maker_giveme();
 static int test_proto_handler();
 
 int
@@ -55,10 +56,14 @@ static int
 test_proto_handler()
 {
 	char * fname = "./demo.txt";
-	uint8_t key = 15;
 	char * r = NULL, * s = NULL;
-	int rlen, slen;
+	int    rlen, slen;
 	size_t blocks;
+	char * bname = nftp_file_bname(fname);
+	int    key;
+
+	assert(bname != NULL);
+	key = NFTP_HASH(bname, strlen(bname));
 
 	// For recver
 	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv."));
@@ -105,6 +110,29 @@ test_proto_handler()
 			s = NULL; slen = 0;
 		}
 	}
+
+	// The packet 0 was lost
+	nftp_log("Pakcet 0 lost");
+	s = NULL; slen = 0;
+
+	// For recver. Ask a giveme packet.
+	nftp_proto_maker(fname, NFTP_TYPE_GIVEME, key, 0, &s, &slen);
+	assert(NULL != s);
+	assert(0 != slen);
+
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
+	// For sender. Handle giveme.
+	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
+	free(r);
+	test_send("0 Packet", s, slen);
+
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
 	assert(0 == nftp_proto_send_stop(fname));
 
 	// For recver
@@ -125,6 +153,7 @@ test_proto_maker()
 	test_proto_maker_ack();
 	test_proto_maker_file();
 	test_proto_maker_end();
+	test_proto_maker_giveme();
 	return (0);
 }
 
@@ -215,5 +244,32 @@ static int
 test_proto_maker_end()
 {
 	return test_proto_maker_file();
+}
+
+static int
+test_proto_maker_giveme()
+{
+	nftp * p;
+	char * v;
+	int    len;
+	char * fpath = "./demo.txt";
+	char * fname = "demo.txt";
+	char * str = "It's a demo.\nIt's a demo.\n";
+	uint8_t key = 16;
+
+	assert(0 == nftp_alloc(&p));
+
+	assert(0 == nftp_proto_maker(fpath, NFTP_TYPE_GIVEME, key, 0, &v, &len));
+	assert(0 == nftp_decode(p, v, len));
+
+	assert(NFTP_TYPE_GIVEME == p->type);
+	assert(len == p->len);
+	assert(0 == p->blockseq);
+	assert(key == p->fileid);
+
+	assert(0 == nftp_free(p));
+	free(v);
+
+	return (0);
 }
 
