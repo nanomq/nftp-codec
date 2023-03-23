@@ -34,6 +34,7 @@ struct buf {
 
 HashTable files;
 nftp_vec *fcb_reg;
+HashTable senderfiles;
 
 struct nctx {
 	int             len;
@@ -98,6 +99,11 @@ nctx_free_cb(void *k, void *v, void *u)
 	}
 }
 
+static void
+senderfile_free_cb(void *k, void *v, void *u)
+{
+}
+
 int
 nftp_proto_init()
 {
@@ -110,6 +116,7 @@ nftp_proto_init()
 		return rv;
 
 	ht_setup(&files, sizeof(uint32_t), sizeof(struct nctx*), NFTP_FILES);
+	ht_setup(&senderfiles, sizeof(uint32_t), NFTP_FNAME_LEN + NFTP_FDIR_LEN, NFTP_FILES);
 
 	return (0);
 }
@@ -130,6 +137,10 @@ nftp_proto_fini()
 	ht_iterate(&files, NULL, nctx_free_cb);
 	ht_clear(&files);
 	ht_destroy(&files);
+
+	ht_iterate(&senderfiles, NULL, senderfile_free_cb);
+	ht_clear(&senderfiles);
+	ht_destroy(&senderfiles);
 
 	if (recvdir) free(recvdir);
 
@@ -163,6 +174,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 	nftp * p;
 	size_t len, blocks;
 	char *v, *fname;
+	char  fullpath[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
 
 	if (NULL == fpath) return (NFTP_ERR_FILEPATH);
 	if ((fname = nftp_file_bname(fpath)) == NULL)
@@ -189,6 +201,15 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 
 		if (0 != (rv = nftp_file_hash(fpath, &p->hashcode)))
 			return rv;
+
+		// XXX bug here. Here we donot get the fileid.
+		// Insert to senderfiles
+		key = NFTP_HASH(fname, strlen(fname));
+		strcpy(fullpath, fpath);
+		if (0 != (rv = ht_insert(&senderfiles, &key, fullpath))) {
+			nftp_fatal("Error in hash");
+			return (NFTP_ERR_HT);
+		}
 		break;
 
 	case NFTP_TYPE_ACK:
@@ -219,8 +240,9 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 	case NFTP_TYPE_GIVEME:
 		if (0 > n) return (NFTP_ERR_ID);
 		p->type = NFTP_TYPE_GIVEME;
+		p->len = 5 + 4 + 2;
 
-		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
+		p->fileid = key;
 
 		p->blockseq = n;
 		break;
@@ -260,6 +282,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 	char            partname[NFTP_FNAME_LEN + 8];
 	char            fullpath[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
 	char            fullpath2[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
+	size_t          blocks;
 
 	if (0 != (rv = nftp_alloc(&n))) return rv;
 
@@ -416,16 +439,22 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		break;
 
 	case NFTP_TYPE_GIVEME:
-		if (!ht_contains(&files, &n->fileid)) {
+		if (!ht_contains(&senderfiles, &n->fileid)) {
 			nftp_fatal("Not found fileid [%d]", n->fileid);
 			return NFTP_ERR_HT;
 		}
-		ctx = *((struct nctx **)ht_lookup(&files, &n->fileid));
 
-		nftp_file_partname(partname, ctx->wfname);
-		nftp_file_fullpath(fullpath, recvdir, partname);
+		strcpy(fullpath, (char *)ht_lookup(&senderfiles, &n->fileid));
 
-		nftp_proto_maker(fullpath, NFTP_TYPE_FILE, n->fileid, n->blockseq, rmsg, rlen);
+		if ((rv = nftp_file_blocks(fullpath, &blocks)) != 0) {
+			nftp_fatal("Error in reading blocks [%s]", fullpath);
+			return rv;
+		}
+
+		if (n->blockseq == blocks-1)
+			nftp_proto_maker(fullpath, NFTP_TYPE_END, n->fileid, n->blockseq, rmsg, rlen);
+		else
+			nftp_proto_maker(fullpath, NFTP_TYPE_FILE, n->fileid, n->blockseq, rmsg, rlen);
 
 		break;
 
