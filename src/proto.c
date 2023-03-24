@@ -148,6 +148,22 @@ nftp_proto_fini()
 }
 
 int
+nftp_proto_hello_get_fname(char *rmsg, int rlen, char **fnamep, int *lenp)
+{
+	if (rmsg[0] != NFTP_TYPE_HELLO)
+		return NFTP_ERR_TYPE;
+	int pos = 8;
+	uint16_t namelen;
+	nftp_get_u16(rmsg+pos, &namelen);
+	char *fname = malloc(namelen);
+	strcpy(fname, rmsg + pos + 2, namelen);
+
+	*fnamep = fname;
+	*lenp   = namelen;
+	return 0;
+}
+
+int
 nftp_proto_send_start(char *fpath)
 {
 	char * fname;
