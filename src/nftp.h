@@ -217,6 +217,7 @@ int nftp_proto_init();
 int nftp_proto_fini();
 int nftp_proto_send_start(char *);
 int nftp_proto_send_stop(char *);
+int nftp_proto_recv_status(char *, int *, int *);
 
 /*
  * This function is to create a NFTP msg quickly.

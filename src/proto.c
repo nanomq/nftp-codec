@@ -168,6 +168,32 @@ nftp_proto_send_stop(char *fpath)
 }
 
 int
+nftp_proto_recv_status(char *fname, int *capp, int *nextseq)
+{
+	struct nctx *ctx;
+	uint32_t fileid;
+
+	/* Remove '.','/',etc */
+	if ((fname = nftp_file_bname(fname)) == NULL)
+		return (NFTP_ERR_FILENAME);
+
+	fileid = NFTP_HASH(fname, strlen(fname));
+
+	if (!ht_contains(&files, &fileid)) {
+		nftp_fatal("Not found fileid [%d]", fileid);
+		free(fname);
+		return NFTP_ERR_HT;
+	}
+	ctx = *((struct nctx **)ht_lookup(&files, &fileid));
+
+	*capp = ctx->cap;
+	*nextseq = ctx->nextid;
+
+	free(fname);
+	return 0;
+}
+
+int
 nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 {
 	int rv;
