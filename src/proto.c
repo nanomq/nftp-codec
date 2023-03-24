@@ -242,7 +242,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		p->type = NFTP_TYPE_GIVEME;
 		p->len = 5 + 4 + 2;
 
-		p->fileid = key;
+		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 
 		p->blockseq = n;
 		break;
@@ -380,6 +380,9 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 			} while (1);
 		} else {
 			// Just store it
+			if (ctx->entries[n->blockseq].len != 0 &&
+			    ctx->entries[n->blockseq].body != NULL)
+				free(ctx->entries[n->blockseq].body);
 			ctx->entries[n->blockseq].len = n->ctlen;
 			ctx->entries[n->blockseq].body = (char *)n->content;
 			n->content = NULL; // avoid be free
