@@ -61,6 +61,7 @@ test_proto_handler()
 	size_t blocks;
 	char * bname = nftp_file_bname(fname);
 	int    key;
+	int    cap, nextseq;
 
 	assert(bname != NULL);
 	key = NFTP_HASH(bname, strlen(bname));
@@ -68,6 +69,9 @@ test_proto_handler()
 	// For recver
 	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv."));
 	assert(0 == nftp_set_recvdir("./build/"));
+
+	// Transferring is not started. So error.
+	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
 
 	// For sender
 	assert(0 == nftp_proto_send_start(fname));
@@ -115,6 +119,11 @@ test_proto_handler()
 	nftp_log("Pakcet 0 lost");
 	s = NULL; slen = 0;
 
+	// For recver.
+	assert(0 == nftp_proto_recv_status(bname, &cap, &nextseq));
+	assert(1 == cap);
+	assert(0 == nextseq);
+
 	// For recver. Ask a giveme packet.
 	nftp_proto_maker(fname, NFTP_TYPE_GIVEME, key, 0, &s, &slen);
 	assert(NULL != s);
@@ -141,6 +150,9 @@ test_proto_handler()
 	assert(NULL == s); // s is first (also last) file msg
 	assert(0 == slen);
 	assert(1 == nftp_file_exist("./build/demo.txt"));
+
+	// For recver. No ctx exists because of transfer has end.
+	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
 
 	free(r);
 	return (0);
@@ -265,7 +277,7 @@ test_proto_maker_giveme()
 	assert(NFTP_TYPE_GIVEME == p->type);
 	assert(len == p->len);
 	assert(0 == p->blockseq);
-	assert(key == p->fileid);
+	assert(NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname)) == p->fileid);
 
 	assert(0 == nftp_free(p));
 	free(v);
