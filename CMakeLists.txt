@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.13)
 
 project(nftp-codec)
 
-set(DEBUG OFF)
-set(TEST ON)
+SET(DEBUG ON)
+SET(TEST ON)
 
 if(DEBUG)
   set(CMAKE_BUILD_TYPE "Debug")

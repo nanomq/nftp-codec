@@ -196,7 +196,7 @@ nftp_proto_recv_status(char *fname, int *capp, int *nextseq)
 	fileid = NFTP_HASH(fname, strlen(fname));
 
 	if (!ht_contains(&files, &fileid)) {
-		nftp_fatal("Not found fileid [%d]", fileid);
+		nftp_log("Not found fileid [%d]", fileid);
 		free(fname);
 		return NFTP_ERR_HT;
 	}
