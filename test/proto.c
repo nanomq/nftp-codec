@@ -115,8 +115,9 @@ test_proto_handler()
 		}
 	}
 
-	// The packet 0 was lost
+	// The packet 0 was lost in transferring
 	nftp_log("Pakcet 0 lost");
+	free(r);
 	s = NULL; slen = 0;
 
 	// For recver.
@@ -155,6 +156,7 @@ test_proto_handler()
 	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
 
 	free(r);
+	free(bname);
 	return (0);
 }
 

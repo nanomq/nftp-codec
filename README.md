@@ -24,7 +24,7 @@ Here are some demo to use nftp-codec.
 
 NFTP over TCP [nftp-go](https://github.com/wanghaEMQ/nftp-go)
 
-NFTP over MQTT [nftp-go](https://github.com/nanomq/nanosdk)
+NFTP over MQTT [nftp-mqtt](https://github.com/nanomq/nanosdk)
 
 [...] More demos are in developing.
 
