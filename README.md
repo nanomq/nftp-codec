@@ -2,9 +2,9 @@
 
 [![Workflows](https://github.com/nanomq/nftp-codec/actions/workflows/test.yml/badge.svg)](https://github.com/nanomq/nftp-codec/actions)
 
-It's a lightweight NFTP(Nano FTP) protocol parser.
+It's a lightweight NFTP(Nano FTP) ver1.1 protocol parser.
 
-## NFTP ver2.0 was released at [Here](https://github.com/nanomq/nftp-codec/blob/main/docs/doc-ver2.0.md)
+## NFTP ver2.0 was released at [Here](https://github.com/nanomq/nftp-codec/blob/main/docs/doc-ver2.0.md) !!! Submit your issues to make NFTP better.
 
 ## Features
 
