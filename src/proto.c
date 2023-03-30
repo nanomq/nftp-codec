@@ -467,20 +467,26 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 			// Run cb
 			if (NULL == ctx->fcb) {
 				nftp_log("Unregistered.");
-				break;
+				goto next;
 			}
+
 			if (ctx->fcb->cb)
 				ctx->fcb->cb(ctx->fcb->arg);
 
 			// Free resource
 			for (int i=0; i<nftp_vec_len(fcb_reg); ++i)
 				if (0 == nftp_vec_get(fcb_reg, i, (void **)&fcb))
-					if (ctx->fcb == fcb)
+					if (ctx->fcb == fcb) {
+						if (i == 0)
+							goto next;
 						nftp_vec_delete(fcb_reg, (void **)&fcb, i);
+						break;
+					}
 
 			free(ctx->fcb->fname);
 			free(ctx->fcb);
 
+		next:
 			if (0 != (rv = ht_erase(&files, &ctx->fileid))) {
 				nftp_fatal("Not find the key [%d] in hashtable.", ctx->fileid);
 				return (NFTP_ERR_HT);
