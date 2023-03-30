@@ -427,8 +427,10 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		} else {
 			// Just store it
 			if (ctx->entries[n->blockseq].len != 0 &&
-			    ctx->entries[n->blockseq].body != NULL)
+			    ctx->entries[n->blockseq].body != NULL) {
 				free(ctx->entries[n->blockseq].body);
+				ctx->len --; // replace rather than add
+			}
 			ctx->entries[n->blockseq].len = n->ctlen;
 			ctx->entries[n->blockseq].body = (char *)n->content;
 			n->content = NULL; // avoid be free
@@ -436,13 +438,13 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 
 		ctx->len ++;
 		nftp_log("Process(recv) [%s]:[%d/%d]\n",
-			ctx->wfname, ctx->len, ctx->cap);
+			ctx->wfname, ctx->nextid, ctx->cap);
 
 		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
 		if (n->type == NFTP_TYPE_END) ctx->status = NFTP_STATUS_END;
 
 		// Recved finished
-		if (ctx->len == ctx->cap) {
+		if (ctx->nextid == ctx->cap) {
 			ctx->status = NFTP_STATUS_FINISH;
 			// Rename
 			nftp_file_fullpath(fullpath2, recvdir, ctx->wfname);
