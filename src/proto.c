@@ -456,12 +456,12 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 			if (0 != nftp_file_hash(fullpath2, &hashcode)) {
 				nftp_fatal("Error happened in file hash [%s].", fullpath2);
 				return (NFTP_ERR_FILE);
-			} else {
-				nftp_log("Hash check passed [%s].", fullpath2);
 			}
 			if (ctx->hashcode != hashcode) {
-				nftp_fatal("Error happened in recving [%s].", ctx->wfname);
+				nftp_log("Hash check failed [%s].", ctx->wfname);
 				return (NFTP_ERR_PROTO);
+			} else {
+				nftp_log("Hash check passed [%s].", ctx->wfname);
 			}
 
 			// Run cb
