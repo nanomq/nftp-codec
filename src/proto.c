@@ -248,6 +248,10 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		// Insert to senderfiles
 		key = NFTP_HASH(fname, strlen(fname));
 		strcpy(fullpath, fpath);
+		if (ht_contains(&senderfiles, &key)) {
+			nftp_log("The last context of file [%s] was covered", fname);
+			ht_erase(&senderfiles, &key);
+		}
 		if (0 != (rv = ht_insert(&senderfiles, &key, fullpath))) {
 			nftp_fatal("Error in hash");
 			return (NFTP_ERR_HT);
