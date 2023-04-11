@@ -18,13 +18,13 @@ It's a lightweight NFTP(Nano FTP) ver1.1 protocol parser.
 
 * NFTP Version 1.1 standard doc is at [Here](https://github.com/nanomq/nftp-codec/blob/main/docs/doc-ver1.1.md)
 
-## Quick start
+## How to use
 
 Here are some demo to use nftp-codec.
 
 NFTP over TCP [nftp-go](https://github.com/wanghaEMQ/nftp-go)
 
-NFTP over MQTT [nftp-mqtt](https://github.com/nanomq/nanosdk)
+NFTP over MQTT [nftp-mqtt](https://github.com/wanghaEMQ/nftp-nanosdk)
 
 [...] More demos are in developing.
 
