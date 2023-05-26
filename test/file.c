@@ -31,7 +31,7 @@ test_file()
 	}
 	assert(0 == nftp_file_clear(file));
 
-	assert(0 == nftp_file_newname(file, &newfname));
+	assert(0 == nftp_file_newname(file, &newfname, "./"));
 	assert(0 == strcmp("demo.txt_01", newfname));
 	free(newfname);
 

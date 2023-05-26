@@ -364,7 +364,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 
 		nftp_file_fullpath(fullpath, recvdir, n->fname);
 		if (nftp_file_exist(fullpath)) {
-			nftp_file_newname(n->fname, &ctx->wfname);
+			nftp_file_newname(n->fname, &ctx->wfname, recvdir);
 			nftp_log("File [%s] exists, recver would save to [%s]",
 			        n->fname, ctx->wfname);
 		} else {
