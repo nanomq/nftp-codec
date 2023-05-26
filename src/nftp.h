@@ -130,7 +130,7 @@ char * nftp_file_bname(char *);
 char * nftp_file_path(char *);
 
 int nftp_file_exist(char *);
-int nftp_file_newname(char *, char **);
+int nftp_file_newname(char *, char **, char *);
 int nftp_file_rename(char *, char *);
 int nftp_file_size(char *, size_t *);
 int nftp_file_blocks(char *, size_t *);
