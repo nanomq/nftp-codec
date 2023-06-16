@@ -102,6 +102,9 @@ nctx_free_cb(void *k, void *v, void *u)
 static void
 senderfile_free_cb(void *k, void *v, void *u)
 {
+	(void) k;
+	(void) v;
+	(void) u;
 }
 
 int
@@ -150,6 +153,7 @@ nftp_proto_fini()
 int
 nftp_proto_hello_get_fname(char *rmsg, int rlen, char **fnamep, int *lenp)
 {
+	(void) rlen;
 	if (rmsg[0] != NFTP_TYPE_HELLO)
 		return NFTP_ERR_TYPE;
 	int pos = 8;
@@ -193,7 +197,7 @@ nftp_proto_recv_status(char *fname, int *capp, int *nextseq)
 	if ((fname = nftp_file_bname(fname)) == NULL)
 		return (NFTP_ERR_FILENAME);
 
-	fileid = NFTP_HASH(fname, strlen(fname));
+	fileid = NFTP_HASH((uint8_t *)fname, strlen(fname));
 
 	if (!ht_contains(&files, &fileid)) {
 		nftp_log("Not found fileid [%d]", fileid);
@@ -246,7 +250,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 
 		// XXX bug here. Here we donot get the fileid.
 		// Insert to senderfiles
-		key = NFTP_HASH(fname, strlen(fname));
+		key = NFTP_HASH((uint8_t *)fname, strlen(fname));
 		strcpy(fullpath, fpath);
 		if (ht_contains(&senderfiles, &key)) {
 			nftp_log("The last context of file [%s] was covered", fname);
@@ -531,6 +535,8 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 int
 nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 {
+	int rv;
+
 	struct file_cb * fcb;
 
 	if (NULL == fname) return (NFTP_ERR_FILENAME);
@@ -547,9 +553,13 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 	strcpy(fcb->fname, fname);
 
 	if (0 == strcmp("*", fname)) {
-		nftp_vec_push(fcb_reg, fcb, NFTP_HEAD);
+		rv = nftp_vec_push(fcb_reg, fcb, NFTP_HEAD);
+		if (rv != 0)
+			return rv;
 	} else {
-		nftp_vec_push(fcb_reg, fcb, NFTP_TAIL);
+		rv = nftp_vec_push(fcb_reg, fcb, NFTP_TAIL);
+		if (rv != 0)
+			return rv;
 	}
 
 	return (0);

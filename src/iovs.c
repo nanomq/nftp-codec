@@ -22,6 +22,7 @@ struct _iovs {
 	pthread_mutex_t mtx;
 };
 
+/*
 static int
 resize(nftp_iovs *iovs, size_t sz)
 {
@@ -29,6 +30,7 @@ resize(nftp_iovs *iovs, size_t sz)
 	(void)sz;
 	return (0);
 }
+*/
 
 int
 nftp_iovs_alloc(nftp_iovs **iovsp)
