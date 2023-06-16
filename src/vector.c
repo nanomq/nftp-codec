@@ -20,12 +20,14 @@ struct _vec {
 	pthread_mutex_t mtx;
 };
 
+/*
 static int
 resize(nftp_vec *v) // TODO
 {
 	(void) v;
 	return (0);
 }
+*/
 
 int
 nftp_vec_alloc(nftp_vec **vp)
