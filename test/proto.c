@@ -156,6 +156,7 @@ test_proto_handler()
 
 	free(r);
 	free(bname);
+	assert(0 == nftp_file_remove("./build/demo.txt"));
 	return (0);
 }
 
