@@ -188,6 +188,59 @@ nftp_proto_send_stop(char *fpath)
 }
 
 int
+nftp_proto_recv_stop(char *fname)
+{
+	struct nctx    *ctx = NULL;
+	struct file_cb *fcb = NULL;
+	char            partname[NFTP_FNAME_LEN + 8];
+	char            fullpath[NFTP_FNAME_LEN + NFTP_FDIR_LEN];
+
+	/* Remove '.','/',etc */
+	if ((fname = nftp_file_bname(fname)) == NULL)
+		return (NFTP_ERR_FILENAME);
+
+	uint32_t fileid = NFTP_HASH((const uint8_t *)fname, strlen(fname));
+	// Get ctx
+	if (!ht_contains(&files, &fileid)) {
+		nftp_fatal("Not found fileid [%d]", fileid);
+		return NFTP_ERR_HT;
+	}
+	ctx = *((struct nctx **)ht_lookup(&files, &fileid));
+
+	// Remove part file
+	nftp_file_partname(partname, ctx->wfname);
+	nftp_file_fullpath(fullpath, recvdir, partname);
+	if (0 != nftp_file_remove(fullpath)) {
+		nftp_fatal("Remove file failed [%s]", fullpath);
+		return NFTP_ERR_FILEPATH;
+	}
+
+	// Remove ctx from files
+	if (0 != ht_erase(&files, &fileid)) {
+		nftp_fatal("Not find the key [%d] in hashtable.", fileid);
+		return (NFTP_ERR_HT);
+	}
+
+	// Remove the fcb
+	if (NULL != ctx->fcb) {
+		for (int i=0; i<nftp_vec_len(fcb_reg); ++i)
+			if (0 == nftp_vec_get(fcb_reg, i, (void **)&fcb))
+				if (ctx->fcb == fcb) {
+					if (i == 0)
+						break;
+					nftp_vec_delete(fcb_reg, (void **)&fcb, i);
+					break;
+				}
+		free(ctx->fcb->fname);
+		free(ctx->fcb);
+	}
+
+	// Free the ctx and the cached entries
+	nctx_free(ctx);
+	return 0;
+}
+
+int
 nftp_proto_recv_status(char *fname, int *capp, int *nextseq)
 {
 	struct nctx *ctx;
