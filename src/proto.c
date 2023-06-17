@@ -537,7 +537,7 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 {
 	int rv;
 
-	struct file_cb * fcb;
+	struct file_cb * fcb, *fcbn;
 
 	if (NULL == fname) return (NFTP_ERR_FILENAME);
 
@@ -553,9 +553,22 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 	strcpy(fcb->fname, fname);
 
 	if (0 == strcmp("*", fname)) {
-		rv = nftp_vec_push(fcb_reg, fcb, NFTP_HEAD);
+		// '*' always the first one
+		if (nftp_vec_len(fcb_reg) == 0) {
+			rv = nftp_vec_push(fcb_reg, fcb, NFTP_TAIL);
+			return rv;
+		}
+		// Update the cb and arg of '*'
+		rv = nftp_vec_get(fcb_reg, 0, (void **)&fcbn);
 		if (rv != 0)
 			return rv;
+		if (0 != strcmp(fcbn->fname, fname))
+			return NFTP_ERR_VEC;
+		fcbn->cb = cb;
+		fcbn->arg = arg;
+		// Free
+		free(fcb->fname);
+		free(fcb);
 	} else {
 		rv = nftp_vec_push(fcb_reg, fcb, NFTP_TAIL);
 		if (rv != 0)
