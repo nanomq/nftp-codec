@@ -43,7 +43,6 @@
 	do {                                                                  \
 		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, ##arg);                                     \
-		exit(0);                                                      \
 	} while (0)
 #endif
 #endif
