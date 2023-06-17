@@ -71,8 +71,13 @@ nftp_file_exist(char *fpath)
 int
 nftp_file_remove(char *fpath)
 {
+	if (0 == nftp_file_exist(fpath)) {
+		nftp_fatal("Not exist");
+		return (NFTP_ERR_FILEPATH);
+	}
+
 	if (0 != remove(fpath))
-		return NFTP_ERR_FILEPATH;
+		return NFTP_ERR_FILE;
 	return 0;
 }
 
@@ -107,6 +112,11 @@ nftp_file_newname(char *fname, char **newnamep, char *path)
 int
 nftp_file_rename(char *sfpath, char *dfpath)
 {
+	if (0 == nftp_file_exist(sfpath)) {
+		nftp_fatal("Not exist");
+		return (NFTP_ERR_FILEPATH);
+	}
+
 	return rename(sfpath, dfpath);
 }
 
@@ -115,6 +125,11 @@ nftp_file_size(char *fpath, size_t *sz)
 {
 	FILE * fp;
 	size_t filesize;
+
+	if (0 == nftp_file_exist(fpath)) {
+		nftp_fatal("Not exist");
+		return (NFTP_ERR_FILEPATH);
+	}
 
 	if ((fp = fopen(fpath, "rb")) == NULL) {
 		nftp_fatal("open error [%s]", fpath);
@@ -153,6 +168,11 @@ nftp_file_readblk(char *fpath, int n, char **strp, size_t *sz)
 	size_t filesize;
 	size_t blksz;
 
+	if (0 == nftp_file_exist(fpath)) {
+		nftp_fatal("Not exist");
+		return (NFTP_ERR_FILEPATH);
+	}
+
 	if ((fp = fopen(fpath, "rb")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
@@ -176,7 +196,7 @@ nftp_file_readblk(char *fpath, int n, char **strp, size_t *sz)
 
 	if (blksz != fread(str, 1, blksz, fp)) {
 		free(str);
-		return (NFTP_ERR_FILE);
+		return (NFTP_ERR_FILERD);
 	}
 
 	fclose(fp);
@@ -192,6 +212,11 @@ nftp_file_read(char *fpath, char **strp, size_t *sz)
 	char * str;
 	char   txt[1000];
 	size_t filesize;
+
+	if (0 == nftp_file_exist(fpath)) {
+		nftp_fatal("Not exist");
+		return (NFTP_ERR_FILEPATH);
+	}
 
 	if ((fp = fopen(fpath, "rb")) == NULL) {
 		nftp_fatal("open error");
@@ -228,7 +253,7 @@ nftp_file_write(char * fpath, char * str, size_t sz)
 
 	filesize = fwrite(str, 1, sz, fp);
 	if (filesize != sz) {
-		return (NFTP_ERR_FILE);
+		return (NFTP_ERR_FILEWR);
 	}
 
 	fclose(fp);
@@ -241,6 +266,11 @@ nftp_file_append(char * fpath, char * str, size_t sz)
 	FILE * fp;
 	size_t filesize;
 
+	if (0 == nftp_file_exist(fpath)) {
+		nftp_fatal("Not exist");
+		return (NFTP_ERR_FILEPATH);
+	}
+
 	if ((fp = fopen(fpath, "ab")) == NULL) {
 		nftp_fatal("open error");
 		return (NFTP_ERR_FILE);
@@ -248,7 +278,7 @@ nftp_file_append(char * fpath, char * str, size_t sz)
 
 	filesize = fwrite(str, 1, sz, fp);
 	if (filesize != sz) {
-		return (NFTP_ERR_FILE);
+		return (NFTP_ERR_FILEWR);
 	}
 
 	fclose(fp);
@@ -259,6 +289,11 @@ int
 nftp_file_clear(char * fpath)
 {
 	FILE * fp;
+
+	if (0 == nftp_file_exist(fpath)) {
+		nftp_fatal("Not exist");
+		return (NFTP_ERR_FILEPATH);
+	}
 
 	if ((fp = fopen(fpath, "wb")) == NULL) {
 		nftp_fatal("open error");
@@ -290,7 +325,7 @@ nftp_file_hash(char *fpath, uint32_t *hashval)
 
 	if (sz != fread(str, 1, sz, fp)) {
 		nftp_fatal("read error");
-		return (NFTP_ERR_FILE);
+		return (NFTP_ERR_FILERD);
 	}
 
 	*hashval = NFTP_HASH((const uint8_t *)str, sz);

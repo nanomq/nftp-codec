@@ -193,6 +193,7 @@ nftp_proto_send_stop(char *fpath)
 int
 nftp_proto_recv_stop(char *fname)
 {
+	int             rv;
 	struct nctx    *ctx = NULL;
 	struct file_cb *fcb = NULL;
 	char            partname[NFTP_FNAME_LEN + 8];
@@ -214,10 +215,12 @@ nftp_proto_recv_stop(char *fname)
 	// Remove part file
 	nftp_file_partname(partname, ctx->wfname);
 	nftp_file_fullpath(fullpath, recvdir, partname);
-	if (0 != nftp_file_remove(fullpath)) {
+
+	rv = nftp_file_remove(fullpath);
+	if (0 != rv) {
 		nftp_fatal("Remove file failed [%s]", fullpath);
 		free(fname);
-		return NFTP_ERR_FILEPATH;
+		return rv;
 	}
 
 	// Remove ctx from files
@@ -299,7 +302,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		if (blocks > (0xFFFF)) {
 			nftp_log("File is too large (MAXSIZE: %dKB).",
 			    (NFTP_BLOCK_SZ * NFTP_BLOCK_NUM / 1024));
-			return NFTP_ERR_FILE;
+			return NFTP_ERR_BLOCKS;
 		}
 		p->blocks = (uint16_t)blocks;
 		p->fname = fname;
@@ -477,22 +480,24 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		nftp_file_fullpath(fullpath, recvdir, partname);
 
 		if (n->blockseq == ctx->nextid) {
-			if (0 != nftp_file_append(fullpath, (char *)n->content, n->ctlen)) {
+			rv = nftp_file_append(fullpath, (char *)n->content, n->ctlen);
+			if (0 != rv) {
 				nftp_fatal("Error in file append [%s]", fullpath);
 				nftp_free(n);
-				return (NFTP_ERR_FILE);
+				return rv;
 			}
 			do {
 				ctx->nextid ++;
 				if ((ctx->nextid > ctx->cap-1) ||
 				    (ctx->entries[ctx->nextid].body == NULL))
 					break;
-				if (0 != nftp_file_append(fullpath,
+				rv = nftp_file_append(fullpath,
 				        ctx->entries[ctx->nextid].body,
-				        ctx->entries[ctx->nextid].len)) {
+				        ctx->entries[ctx->nextid].len);
+				if (0 != rv) {
 					nftp_fatal("Error in file append [%s]", fullpath);
 					nftp_free(n);
-					return (NFTP_ERR_FILE);
+					return rv;
 				}
 				free(ctx->entries[ctx->nextid].body);
 				ctx->entries[ctx->nextid].body = NULL;
@@ -522,16 +527,18 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 			ctx->status = NFTP_STATUS_FINISH;
 			// Rename
 			nftp_file_fullpath(fullpath2, recvdir, ctx->wfname);
-			if (0 != nftp_file_rename(fullpath, fullpath2)) {
+			rv = nftp_file_rename(fullpath, fullpath2);
+			if (0 != rv) {
 				nftp_fatal("Error happened in file rename [%s].", fullpath);
 				nftp_free(n);
-				return (NFTP_ERR_FILE);
+				return rv;
 			}
 			// hash check
-			if (0 != nftp_file_hash(fullpath2, &hashcode)) {
+			rv = nftp_file_hash(fullpath2, &hashcode);
+			if (0 != rv) {
 				nftp_fatal("Error happened in file hash [%s].", fullpath2);
 				nftp_free(n);
-				return (NFTP_ERR_FILE);
+				return rv;
 			}
 			if (ctx->hashcode != hashcode) {
 				nftp_log("Hash check failed [%s].", ctx->wfname);
