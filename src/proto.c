@@ -145,7 +145,10 @@ nftp_proto_fini()
 	ht_clear(&senderfiles);
 	ht_destroy(&senderfiles);
 
-	if (recvdir) free(recvdir);
+	if (recvdir) {
+		free(recvdir);
+		recvdir = NULL;
+	}
 
 	return (0);
 }
@@ -494,7 +497,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		}
 
 		ctx->len ++;
-		nftp_log("Process(recv) [%s]:[%d/%d]\n",
+		nftp_log("Process(recv) [%s]:[%d/%d]",
 			ctx->wfname, ctx->nextid, ctx->cap);
 
 		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
@@ -638,7 +641,10 @@ nftp_set_recvdir(char * dir)
 	if ((rdir = malloc(strlen(dir)+1)) == NULL) {
 		return (NFTP_ERR_MEM);
 	}
-	if (recvdir) free(recvdir);
+	if (recvdir) {
+		free(recvdir);
+		recvdir = NULL;
+	}
 
 	strcpy(rdir, dir);
 	recvdir = rdir;
