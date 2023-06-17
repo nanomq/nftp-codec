@@ -206,6 +206,7 @@ nftp_proto_recv_stop(char *fname)
 	// Get ctx
 	if (!ht_contains(&files, &fileid)) {
 		nftp_fatal("Not found fileid [%d]", fileid);
+		free(fname);
 		return NFTP_ERR_HT;
 	}
 	ctx = *((struct nctx **)ht_lookup(&files, &fileid));
@@ -215,12 +216,14 @@ nftp_proto_recv_stop(char *fname)
 	nftp_file_fullpath(fullpath, recvdir, partname);
 	if (0 != nftp_file_remove(fullpath)) {
 		nftp_fatal("Remove file failed [%s]", fullpath);
+		free(fname);
 		return NFTP_ERR_FILEPATH;
 	}
 
 	// Remove ctx from files
 	if (0 != ht_erase(&files, &fileid)) {
 		nftp_fatal("Not find the key [%d] in hashtable.", fileid);
+		free(fname);
 		return (NFTP_ERR_HT);
 	}
 
@@ -240,6 +243,7 @@ nftp_proto_recv_stop(char *fname)
 
 	// Free the ctx and the cached entries
 	nctx_free(ctx);
+	free(fname);
 	return 0;
 }
 
@@ -359,8 +363,9 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 	}
 
 	size_t alen;
-	if (0 != (rv = nftp_encode(p, (uint8_t **)rmsg, &alen)))
+	if (0 != (rv = nftp_encode(p, (uint8_t **)rmsg, &alen))) {
 		return rv;
+	}
 	*rlen = alen;
 
 	if (NFTP_TYPE_END == p->type) {
@@ -379,7 +384,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 int
 nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 {
-	int             rv       = 1;
+	int             rv       = 0;
 	uint32_t        hashcode = 0;
 	nftp *          n;
 	struct nctx *   ctx = NULL;
@@ -396,7 +401,10 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 	*rmsg = NULL;
 	*rlen = 0;
 
-	if (0 != (rv = nftp_decode(n, (uint8_t *)msg, len))) return rv;
+	if (0 != (rv = nftp_decode(n, (uint8_t *)msg, len))) {
+		nftp_free(n);
+		return rv;
+	}
 
 	switch (n->type) {
 	case NFTP_TYPE_HELLO:
@@ -429,6 +437,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 			        n->fname, ctx->wfname);
 		} else {
 			if ((ctx->wfname = malloc(n->namelen+1)) == NULL) {
+				nftp_free(n);
 				return (NFTP_ERR_MEM);
 			}
 			strcpy(ctx->wfname, n->fname);
@@ -437,11 +446,13 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		nftp_file_fullpath(fullpath, recvdir, partname);
 		if (0 != (rv = nftp_file_write(fullpath, "", 0))) { // create file
 			nftp_fatal("File write failed [%s]", fullpath);
+			nftp_free(n);
 			return rv;
 		}
 
 		if (0 != (rv = ht_insert(&files, &ctx->fileid, &ctx))) {
 			nftp_fatal("Error in hash");
+			nftp_free(n);
 			return (NFTP_ERR_HT);
 		}
 		ctx->status = NFTP_STATUS_HELLO;
@@ -457,6 +468,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 	case NFTP_TYPE_END:
 		if (!ht_contains(&files, &n->fileid)) {
 			nftp_fatal("Not found fileid [%d]", n->fileid);
+			nftp_free(n);
 			return NFTP_ERR_HT;
 		}
 		ctx = *((struct nctx **)ht_lookup(&files, &n->fileid));
@@ -467,6 +479,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		if (n->blockseq == ctx->nextid) {
 			if (0 != nftp_file_append(fullpath, (char *)n->content, n->ctlen)) {
 				nftp_fatal("Error in file append [%s]", fullpath);
+				nftp_free(n);
 				return (NFTP_ERR_FILE);
 			}
 			do {
@@ -478,6 +491,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 				        ctx->entries[ctx->nextid].body,
 				        ctx->entries[ctx->nextid].len)) {
 					nftp_fatal("Error in file append [%s]", fullpath);
+					nftp_free(n);
 					return (NFTP_ERR_FILE);
 				}
 				free(ctx->entries[ctx->nextid].body);
@@ -510,15 +524,18 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 			nftp_file_fullpath(fullpath2, recvdir, ctx->wfname);
 			if (0 != nftp_file_rename(fullpath, fullpath2)) {
 				nftp_fatal("Error happened in file rename [%s].", fullpath);
+				nftp_free(n);
 				return (NFTP_ERR_FILE);
 			}
 			// hash check
 			if (0 != nftp_file_hash(fullpath2, &hashcode)) {
 				nftp_fatal("Error happened in file hash [%s].", fullpath2);
+				nftp_free(n);
 				return (NFTP_ERR_FILE);
 			}
 			if (ctx->hashcode != hashcode) {
 				nftp_log("Hash check failed [%s].", ctx->wfname);
+				nftp_free(n);
 				return (NFTP_ERR_PROTO);
 			} else {
 				nftp_log("Hash check passed [%s].", ctx->wfname);
@@ -549,6 +566,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		next:
 			if (0 != (rv = ht_erase(&files, &ctx->fileid))) {
 				nftp_fatal("Not find the key [%d] in hashtable.", ctx->fileid);
+				nftp_free(n);
 				return (NFTP_ERR_HT);
 			}
 			nctx_free(ctx);
@@ -558,6 +576,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 	case NFTP_TYPE_GIVEME:
 		if (!ht_contains(&senderfiles, &n->fileid)) {
 			nftp_fatal("Not found fileid [%d]", n->fileid);
+			nftp_free(n);
 			return NFTP_ERR_HT;
 		}
 
@@ -565,6 +584,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 
 		if ((rv = nftp_file_blocks(fullpath, &blocks)) != 0) {
 			nftp_fatal("Error in reading blocks [%s]", fullpath);
+			nftp_free(n);
 			return rv;
 		}
 
