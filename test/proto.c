@@ -35,9 +35,9 @@ test_proto()
 	assert(0 == nftp_proto_fini());
 
 	assert(0 == nftp_proto_init());
-	test_proto_stop();
+	assert(0 == test_proto_stop());
 	// Ensure the second transferring with same filename works
-	test_proto_stop();
+	assert(0 == test_proto_stop());
 	assert(0 == nftp_proto_fini());
 
 	assert(0 == nftp_proto_init());
@@ -60,6 +60,7 @@ cb_proto_demo(void * arg) {nftp_log("Demo: %s", (char *)arg); return (0);}
 static int
 test_proto_stop()
 {
+	nftp_log("test_proto_stop");
 	char * fname = "./demo.txt";
 	char * r = NULL, * s = NULL;
 	int    rlen, slen;
@@ -125,10 +126,6 @@ test_proto_stop()
 			s = NULL; slen = 0;
 		}
 	}
-
-	// Transfer
-	r = s; rlen = slen;
-	s = NULL; slen = 0;
 
 	assert(0 == nftp_proto_send_stop(fname));
 
