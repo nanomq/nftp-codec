@@ -23,6 +23,7 @@ static int test_proto_maker_file();
 static int test_proto_maker_end();
 static int test_proto_maker_giveme();
 static int test_proto_handler();
+static int test_proto_stop();
 
 int
 test_proto()
@@ -31,6 +32,12 @@ test_proto()
 
 	assert(0 == nftp_proto_init());
 	test_proto_maker();
+	assert(0 == nftp_proto_fini());
+
+	assert(0 == nftp_proto_init());
+	test_proto_stop();
+	// Ensure the second transferring with same filename works
+	test_proto_stop();
 	assert(0 == nftp_proto_fini());
 
 	assert(0 == nftp_proto_init());
@@ -49,6 +56,96 @@ test_recv(char *s, char **vp, int *lenp) {
 
 static inline int
 cb_proto_demo(void * arg) {nftp_log("Demo: %s", (char *)arg); return (0);}
+
+static int
+test_proto_stop()
+{
+	char * fname = "./demo.txt";
+	char * r = NULL, * s = NULL;
+	int    rlen, slen;
+	size_t blocks;
+	char * bname = nftp_file_bname(fname);
+	int    key;
+	int    cap, nextseq;
+
+	assert(bname != NULL);
+	key = NFTP_HASH((uint8_t *)bname, strlen(bname));
+
+	// For recver
+	assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv."));
+	assert(0 == nftp_set_recvdir("./build/"));
+
+	// Transferring is not started. So error.
+	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
+
+	// For sender
+	assert(0 == nftp_proto_send_start(fname));
+	nftp_proto_maker(fname, NFTP_TYPE_HELLO, key, 0, &s, &slen);
+	assert(NULL != s);
+	assert(0 != slen);
+	test_send("HELLO", s, slen);
+
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
+	// For recver
+	test_recv("HELLO", &r, &rlen);
+	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
+	assert(NULL != s); // s is ACK msg
+	assert(0 != slen);
+	test_send("ACK", s, slen);
+
+	free(r);
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
+	// For sender
+	test_recv("ACK", &r, &rlen);
+	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
+	assert(NULL == s);
+	assert(0 == slen);
+	free(r);
+
+	// Recver stop transferring
+	assert(0 == nftp_proto_recv_stop(fname));
+
+	// Fail due to no ctx therein
+	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
+
+	// Sender keep transferring
+	if (s == NULL && slen == 0) {
+		assert(0 == nftp_file_blocks(fname, (size_t *)&blocks));
+		for (int i=0; i < (int)blocks; ++i) {
+			assert(0 == nftp_proto_maker(fname, NFTP_TYPE_FILE, key, i, &s, &slen));
+			test_send("END", s, slen);
+			// Transfer
+			r = s; rlen = slen;
+			s = NULL; slen = 0;
+		}
+	}
+
+	// Transfer
+	r = s; rlen = slen;
+	s = NULL; slen = 0;
+
+	assert(0 == nftp_proto_send_stop(fname));
+
+	// For recver
+	test_recv("END", &r, &rlen);
+	assert(0 != nftp_proto_handler(r, rlen, &s, &slen));
+	assert(NULL == s); // s is first (also last) file msg
+	assert(0 == slen);
+	assert(0 == nftp_file_exist("./build/demo.txt")); // Not exists
+
+	// For recver. No ctx exists because of transfer has end.
+	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
+	free(r);
+
+	free(bname);
+	return (0);
+}
 
 static int
 test_proto_handler()
