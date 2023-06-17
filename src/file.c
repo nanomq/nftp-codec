@@ -69,6 +69,14 @@ nftp_file_exist(char *fpath)
 }
 
 int
+nftp_file_remove(char *fpath)
+{
+	if (0 != remove(fpath))
+		return NFTP_ERR_FILEPATH;
+	return 0;
+}
+
+int
 nftp_file_newname(char *fname, char **newnamep, char *path)
 {
 	char * newname;

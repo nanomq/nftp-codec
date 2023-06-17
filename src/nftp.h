@@ -129,6 +129,7 @@ uint32_t nftp_crc32c(const uint8_t *, size_t);
 char * nftp_file_bname(char *);
 char * nftp_file_path(char *);
 
+int nftp_file_remove(char *);
 int nftp_file_exist(char *);
 int nftp_file_newname(char *, char **, char *);
 int nftp_file_rename(char *, char *);
