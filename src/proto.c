@@ -237,11 +237,17 @@ nftp_proto_recv_stop(char *fname)
 				if (ctx->fcb == fcb) {
 					if (i == 0)
 						break;
-					nftp_vec_delete(fcb_reg, (void **)&fcb, i);
+					rv = nftp_vec_delete(fcb_reg, (void **)&fcb, i);
+					if (0 != rv) {
+						nftp_fatal("Remove fcb failed [%d]", i);
+						return rv;
+					}
+					if (fcb) {
+						free(fcb->fname);
+						free(fcb);
+					}
 					break;
 				}
-		free(ctx->fcb->fname);
-		free(ctx->fcb);
 	}
 
 	// Free the ctx and the cached entries
