@@ -33,7 +33,7 @@ struct buf {
 };
 
 HashTable files;
-nftp_vec *fcb_reg;
+nftp_vec *fcb_reg = NULL;
 HashTable senderfiles;
 
 struct nctx {
