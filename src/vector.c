@@ -71,16 +71,17 @@ nftp_vec_insert(nftp_vec *v, void *entry, int pos)
 {
 	if (!v) return (NFTP_ERR_VEC);
 
-	if (v->low + v->len + 1 > v->cap)
-		return (NFTP_ERR_OVERFLOW); // Resize TODO
+	if (v->len == v->cap)
+		return (NFTP_ERR_OVERFLOW);
 
 	if (pos > v->len)
 		return nftp_vec_push(v, entry, NFTP_TAIL);
 
 	pthread_mutex_lock(&v->mtx);
 	for (int i = v->low + v->len; i > v->low + pos; --i)
-		v->vec[i] = v->vec[i-1];
-	v->vec[v->low + pos] = entry;
+		v->vec[i % v->cap] = v->vec[(i-1) % v->cap];
+	v->vec[(v->low + pos) % v->cap] = entry;
+	// nftp_log("after insert v[%d]=%p(%c)", (v->low + pos) % v->cap, entry, *(((char*)entry) + 1));
 
 	v->len ++;
 	pthread_mutex_unlock(&v->mtx);
@@ -97,9 +98,10 @@ nftp_vec_delete(nftp_vec *v, void **entryp, int pos)
 		return (NFTP_ERR_OVERFLOW);
 
 	pthread_mutex_lock(&v->mtx);
-	*entryp = v->vec[v->low + pos];
-	for (int i = v->low + pos + 1; i < v->low + v->len; ++i)
-		v->vec[i-1] = v->vec[i];
+	*entryp = v->vec[(v->low + pos) % v->cap];
+	for (int i = v->low + pos + 1; i < v->low + v->len; ++i) {
+		v->vec[(i-1) % v->cap] = v->vec[i % v->cap];
+	}
 	v->len --;
 	pthread_mutex_unlock(&v->mtx);
 
@@ -114,24 +116,25 @@ nftp_vec_push(nftp_vec *v, void *entry, int flag)
 	if (!v) return (NFTP_ERR_VEC);
 
 	pthread_mutex_lock(&v->mtx);
+	if (v->len == v->cap) {
+		pthread_mutex_unlock(&v->mtx);
+		return (NFTP_ERR_OVERFLOW);
+	}
+
 	if (NFTP_HEAD == flag) {
-		if (v->low == 0) {
-			pthread_mutex_unlock(&v->mtx);
-			return (NFTP_ERR_OVERFLOW);
-		}
 		v->low --;
+		v->low += v->cap;
+		v->low %= v->cap;
 		pos = v->low;
 	} else if (NFTP_TAIL == flag) {
-		if (v->low + v->len > v->cap) {
-			pthread_mutex_unlock(&v->mtx);
-			return (NFTP_ERR_OVERFLOW);
-		}
 		pos = v->low + v->len;
+		pos %= v->cap;
 	} else {
 		pthread_mutex_unlock(&v->mtx);
 		return (NFTP_ERR_FLAG);
 	}
 	v->len ++;
+	// nftp_log("push pos %d", pos);
 	v->vec[pos] = entry;
 	pthread_mutex_unlock(&v->mtx);
 
@@ -151,8 +154,10 @@ nftp_vec_pop(nftp_vec *v, void **entryp, int flag)
 	if (NFTP_HEAD == flag) {
 		pos = v->low;
 		v->low ++;
+		v->low %= v->cap;
 	} else if (NFTP_TAIL == flag) {
 		pos = v->low + v->len - 1;
+		pos %= v->cap;
 	} else {
 		pthread_mutex_unlock(&v->mtx);
 		return (NFTP_ERR_FLAG);
@@ -160,6 +165,7 @@ nftp_vec_pop(nftp_vec *v, void **entryp, int flag)
 
 	*entryp = v->vec[pos];
 	v->vec[pos] = NULL;
+	// nftp_log("pop pos %d", pos);
 
 	v->len --;
 	pthread_mutex_unlock(&v->mtx);
@@ -174,7 +180,7 @@ nftp_vec_get(nftp_vec *v, int idx, void **entryp)
 	if (idx >= v->len) return (NFTP_ERR_OVERFLOW);
 	if (idx < 0) return (NFTP_ERR_OVERFLOW);
 
-	*entryp = v->vec[v->low + idx];
+	*entryp = v->vec[(v->low + idx) % v->cap];
 
 	return (0);
 }
