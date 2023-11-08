@@ -190,35 +190,11 @@ nftp_vec_getidx(nftp_vec *v, void *entry, int *idxp)
 {
 	if (!v) return (NFTP_ERR_VEC);
 	for (int i = v->low; i < v->low + v->len; ++i)
-		if (v->vec[i] == entry) {
-			*idxp = i - v->low;
+		if (v->vec[i % v->cap] == entry) {
+			*idxp = (i - v->low) % v->cap;
 			return (0);
 		}
 	return (NFTP_ERR_EMPTY);
-}
-
-int
-nftp_vec_cat(nftp_vec *dv, nftp_vec *sv)
-{
-	if (!dv) return (NFTP_ERR_VEC);
-	if (!sv) return (0); // Do not change the destination vector
-
-	if (dv->low + dv->len + sv->len > dv->cap)
-		return (NFTP_ERR_OVERFLOW);
-
-	pthread_mutex_lock(&dv->mtx);
-	pthread_mutex_lock(&sv->mtx);
-
-	int idx = dv->low + dv->len;
-	for (int i = 0; i < sv->len; ++i)
-		dv->vec[idx + i] = sv->vec[sv->low + i];
-
-	dv->len += sv->len;
-
-	pthread_mutex_unlock(&sv->mtx);
-	pthread_mutex_unlock(&dv->mtx);
-
-	return (0);
 }
 
 int
