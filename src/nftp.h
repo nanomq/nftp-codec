@@ -154,7 +154,7 @@ nftp_iter * nftp_iter_prev(nftp_iter *);
 
 typedef struct _vec nftp_vec;
 
-int nftp_vec_alloc(nftp_vec **);
+int nftp_vec_alloc(nftp_vec **, int);
 int nftp_vec_free(nftp_vec *);
 int nftp_vec_append(nftp_vec *, void *);
 int nftp_vec_insert(nftp_vec *, void *, int);

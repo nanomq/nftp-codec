@@ -30,18 +30,20 @@ resize(nftp_vec *v) // TODO
 */
 
 int
-nftp_vec_alloc(nftp_vec **vp)
+nftp_vec_alloc(nftp_vec **vp, int sz)
 {
 	nftp_vec *v;
 
 	if ((v = malloc(sizeof(*v))) == NULL)
 		return (NFTP_ERR_MEM);
-	if ((v->vec = malloc(sizeof(void *) * NFTP_SIZE)) == NULL)
+	if (sz <= 0)
+		sz = NFTP_SIZE;
+	if ((v->vec = malloc(sizeof(void *) * sz)) == NULL)
 		return (NFTP_ERR_MEM);
 	pthread_mutex_init(&v->mtx, NULL);
 
 	v->len = 0;
-	v->cap = NFTP_SIZE;
+	v->cap = sz;
 	v->low = v->cap/4;
 
 	*vp = v;

@@ -112,7 +112,7 @@ nftp_proto_init()
 {
 	int rv;
 
-	if (0 != (rv = nftp_vec_alloc(&fcb_reg)))
+	if (0 != (rv = nftp_vec_alloc(&fcb_reg, NFTP_FILES)))
 		return rv;
 	// Set default callback and arg for all file
 	if (0 != (rv = nftp_proto_register("*", NULL, NULL)))
