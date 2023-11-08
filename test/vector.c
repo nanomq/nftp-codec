@@ -20,10 +20,10 @@ test_vector()
 	char *e0 = "e0", *e1, *e2 = "e2";
 	int idx;
 
-	assert(0 == nftp_vec_alloc(&v1));
+	assert(0 == nftp_vec_alloc(&v1, NFTP_SIZE * 2));
 	assert(NULL != v1);
 	assert(0 == nftp_vec_len(v1));
-	assert(NFTP_SIZE == nftp_vec_cap(v1));
+	assert(NFTP_SIZE * 2 == nftp_vec_cap(v1));
 
 	assert(0 == nftp_vec_append(v1, (void *)e0));
 	assert(1 == nftp_vec_len(v1));
@@ -60,7 +60,7 @@ test_vector()
 	assert(e0 == e1);
 	assert(1 == nftp_vec_len(v1));
 
-	assert(0 == nftp_vec_alloc(&v2));
+	assert(0 == nftp_vec_alloc(&v2, 0));
 	assert(0 == nftp_vec_len(v2));
 	assert(0 == nftp_vec_append(v2, (void *)e2));
 	assert(0 == nftp_vec_append(v2, (void *)e2));

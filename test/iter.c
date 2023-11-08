@@ -21,7 +21,7 @@ test_iter()
 	nftp_iter *iter;
 	struct iovec * iov;
 
-	assert(0 == nftp_vec_alloc(&v));
+	assert(0 == nftp_vec_alloc(&v, 0));
 	assert(0 == nftp_vec_append(v, &n1));
 	assert(0 == nftp_vec_append(v, &n2));
 
