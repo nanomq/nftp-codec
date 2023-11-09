@@ -270,6 +270,7 @@ nftp_proto_recv_status(char *fname, int *capp, int *nextseq)
 
 	if (!ht_contains(&files, &fileid)) {
 		nftp_log("Not found fileid [%d]", fileid);
+		*nextseq = -1;
 		free(fname);
 		return NFTP_ERR_HT;
 	}
@@ -588,7 +589,7 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 
 	case NFTP_TYPE_GIVEME:
 		if (!ht_contains(&senderfiles, &n->fileid)) {
-			nftp_fatal("Not found fileid [%d]", n->fileid);
+			nftp_fatal("Not found fileid [%d][%s]", n->fileid, n->fname);
 			nftp_free(n);
 			return NFTP_ERR_HT;
 		}
