@@ -18,43 +18,89 @@
 #ifndef DEBUG
 #define nftp_fatal(format, ...)                                                 \
 	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		fprintf(stderr, "ERR %s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, __VA_ARGS__);                                     \
 	} while (0)
-#else
-// Only EXIT in DEBUG MODE
+#else //DEBUG
+#ifdef LOGTOFILE
 #define nftp_fatal(format, ...)                                                 \
 	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		FILE *fd = fopen(LOGTOFILE, "w"); \
+		fprintf(fd, "ERR %s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, __VA_ARGS__);                                     \
-		exit(0);                                                      \
+		fclose(fd); \
 	} while (0)
-#endif
-#else
+#else // LOGTOFILE
+	do {                                                                  \
+		fprintf(stderr, "ERR %s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, __VA_ARGS__);                                     \
+	} while (0)
+#endif // LOGTOFILE
+#endif // DEBUG
+#else // LINUX
 #ifndef DEBUG
 #define nftp_fatal(format, arg...)                                                 \
 	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		fprintf(stderr, "ERR %s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, ##arg);                                     \
 	} while (0)
-#else
-// Only EXIT in DEBUG MODE
+#else // DEBUG
+#ifdef LOGTOFILE
 #define nftp_fatal(format, arg...)                                                 \
 	do {                                                                  \
-		fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		FILE *fd = fopen(LOGTOFILE, "w"); \
+		fprintf(fd, "ERR %s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, ##arg);                                     \
+		fclose(fd); \
+	} while (0)
+#else // LOGTOFILE
+#define nftp_fatal(format, arg...)                                                 \
+	do {                                                                  \
+		fprintf(stderr, "ERR %s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, ##arg);                                     \
 	} while (0)
-#endif
-#endif
+#endif // LOGTOFILE
+#endif // DEBUG
+#endif // WIN32
 
 #ifdef _WIN32
+#ifdef DEBUG
+#ifdef LOGTOFILE
 #define nftp_log(format, ...)                                           \
-	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-	    __FUNCTION__, __VA_ARGS__)
-#else
+	do { \
+		FILE *fd = fopen(LOGTOFILE, "w"); \
+		fprintf(fd, "INFO %s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, __VA_ARGS__);                                     \
+		fclose(fd); \
+	} while (0)
+#else // LOGTOFILE
+#define nftp_log(format, ...)                                           \
+	do { \
+		fprintf(stderr, "INFO %s:%d(%s) " format "\n", __FILE__, __LINE__, \
+	    	__FUNCTION__, __VA_ARGS__); \
+	} while (0)
+#endif // LOGTOFILE
+#endif // DEBUG
+
+#else // Linux
+
+#ifdef DEBUG
+#ifdef LOGTOFILE
 #define nftp_log(format, arg...)                                           \
-	fprintf(stderr, "%s:%d(%s) " format "\n", __FILE__, __LINE__, \
-	    __FUNCTION__, ##arg)
-#endif
+	do { \
+		FILE *fd = fopen(LOGTOFILE, "w"); \
+		fprintf(fd, "INFO %s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, ##arg);                                     \
+		fclose(fd); \
+	} while (0)
+#else // LOGTOFILE
+#define nftp_log(format, arg...)                                           \
+	do { \
+		fprintf(stderr, "INFO %s:%d(%s) " format "\n", __FILE__, __LINE__, \
+		    __FUNCTION__, ##arg); \
+	} while (0)
+#endif // LOGTOFILE
+#endif // DEBUG
+#endif // WIN32
 
 #endif
