@@ -213,22 +213,23 @@ nftp_proto_recv_stop(char *fname)
 	}
 	ctx = *((struct nctx **)ht_lookup(&files, &fileid));
 
-	// Remove part file
+	// Get part file
 	nftp_file_partname(partname, ctx->wfname);
 	nftp_file_fullpath(fullpath, recvdir, partname);
-
-	rv = nftp_file_remove(fullpath);
-	if (0 != rv) {
-		nftp_fatal("Remove file failed [%s]", fullpath);
-		free(fname);
-		return rv;
-	}
 
 	// Remove ctx from files
 	if (0 != ht_erase(&files, &fileid)) {
 		nftp_fatal("Not find the key [%d] in hashtable.", fileid);
 		free(fname);
 		return (NFTP_ERR_HT);
+	}
+
+	// Remove part file
+	rv = nftp_file_remove(fullpath);
+	if (0 != rv) {
+		nftp_fatal("Remove file failed [%s]", fullpath);
+		free(fname);
+		return rv;
 	}
 
 	// Remove the fcb
