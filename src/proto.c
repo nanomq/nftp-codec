@@ -162,8 +162,9 @@ nftp_proto_hello_get_fname(char *rmsg, int rlen, char **fnamep, int *lenp)
 	int pos = 8;
 	uint16_t namelen;
 	nftp_get_u16(rmsg+pos, namelen);
-	char *fname = malloc(namelen);
+	char *fname = malloc(namelen + 1);
 	strncpy(fname, rmsg + pos + 2, namelen);
+	fname[namelen] = '\0';
 
 	*fnamep = fname;
 	*lenp   = namelen;
