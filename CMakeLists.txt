@@ -13,6 +13,11 @@ if(DEBUG)
   add_link_options(-fsanitize=address)
 endif(DEBUG)
 
+# SET(LOGTOFILE "/tmp/a.txt")
+if(LOGTOFILE)
+	add_compile_definitions(LOGTOFILE=\"${LOGTOFILE}\")
+endif(LOGTOFILE)
+
 #add_subdirectory(hashtable)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hashtable)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
