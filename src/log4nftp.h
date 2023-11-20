@@ -31,6 +31,7 @@
 		fclose(fd); \
 	} while (0)
 #else // LOGTOFILE
+#define nftp_fatal(format, ...)                                                 \
 	do {                                                                  \
 		fprintf(stderr, "ERR %s:%d(%s) " format "\n", __FILE__, __LINE__, \
 		    __FUNCTION__, __VA_ARGS__);                                     \
