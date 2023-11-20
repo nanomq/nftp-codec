@@ -80,6 +80,12 @@
 	    	__FUNCTION__, __VA_ARGS__); \
 	} while (0)
 #endif // LOGTOFILE
+
+#else // DEBUG
+
+#define nftp_log(format, ...)                                           \
+	do { \
+	} while (0)
 #endif // DEBUG
 
 #else // Linux
@@ -100,6 +106,12 @@
 		    __FUNCTION__, ##arg); \
 	} while (0)
 #endif // LOGTOFILE
+
+#else // DEBUG
+
+#define nftp_log(format, arg...)                                           \
+	do { \
+	} while (0)
 #endif // DEBUG
 #endif // WIN32
 
