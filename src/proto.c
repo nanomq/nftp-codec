@@ -525,8 +525,8 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		}
 
 		ctx->len ++;
-		nftp_log("Process(recv) [%s]:[%d/%d]",
-			ctx->wfname, ctx->nextid, ctx->cap);
+		//nftp_log("Process(recv) [%s]:[%d/%d]",
+		//	ctx->wfname, ctx->nextid, ctx->cap);
 
 		if (n->type == NFTP_TYPE_FILE) ctx->status = NFTP_STATUS_TRANSFER;
 		if (n->type == NFTP_TYPE_END) ctx->status = NFTP_STATUS_END;
