@@ -640,6 +640,7 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 	fcb->arg = arg;
 
 	if ((fcb->fname = malloc(strlen(fname)+1)) == NULL) {
+		free(fcb);
 		return (NFTP_ERR_MEM);
 	}
 	strcpy(fcb->fname, fname);
@@ -648,26 +649,46 @@ nftp_proto_register(char * fname, int (*cb)(void *), void *arg)
 		// '*' always the first one
 		if (nftp_vec_len(fcb_reg) == 0) {
 			rv = nftp_vec_push(fcb_reg, fcb, NFTP_TAIL);
-			return rv;
+			if (rv != 0)
+				goto err;
+			return (0);
 		}
 		// Update the cb and arg of '*'
 		rv = nftp_vec_get(fcb_reg, 0, (void **)&fcbn);
 		if (rv != 0)
-			return rv;
-		if (0 != strcmp(fcbn->fname, fname))
-			return NFTP_ERR_VEC;
+			goto err;
+		if (0 != strcmp(fcbn->fname, fname)) {
+			rv = NFTP_ERR_VEC;
+			goto err;
+		}
 		fcbn->cb = cb;
 		fcbn->arg = arg;
 		// Free
 		free(fcb->fname);
 		free(fcb);
 	} else {
+		// Not allowed two files with same filename are processing
+		for (int i=1; i<nftp_vec_len(fcb_reg); ++i) {
+			rv = nftp_vec_get(fcb_reg, i, (void **)&fcbn);
+			if (rv != 0)
+				goto err;
+			if (0 == strcmp(fcbn->fname, fcb->fname)) {
+				nftp_fatal("File (%s) is processing...", fcb->fname);
+				rv = NFTP_ERR_HT;
+				goto err;
+			}
+		}
 		rv = nftp_vec_push(fcb_reg, fcb, NFTP_TAIL);
 		if (rv != 0)
-			return rv;
+			goto err;
 	}
 
 	return (0);
+
+err:
+	free(fcb->fname);
+	free(fcb);
+	return rv;
 }
 
 int
