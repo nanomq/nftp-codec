@@ -155,6 +155,9 @@ test_proto_handler()
 	int    key;
 	int    cap, nextseq;
 
+	assert(0 == nftp_proto_register("aaa", NULL, NULL));
+	assert(NFTP_ERR_HT == nftp_proto_register("aaa", NULL, NULL));
+
 	assert(bname != NULL);
 	key = NFTP_HASH((uint8_t *)bname, strlen(bname));
 
