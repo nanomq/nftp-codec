@@ -244,13 +244,14 @@ test_proto_handler()
 	// For recver
 	test_recv("END", &r, &rlen);
 	assert(0 == nftp_proto_handler(r, rlen, &s, &slen));
-	assert(NULL == s); // s is first (also last) file msg
-	assert(0 == slen);
+	assert(0 == strcmp(s, "demo.txt")); // s is first (also last) file msg
+	assert((int)strlen(s) == slen);
 	assert(1 == nftp_file_exist("./build/demo.txt"));
 
 	// For recver. No ctx exists because of transfer has end.
 	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
 
+	free(s);
 	free(r);
 	free(bname);
 	assert(0 == nftp_file_remove("./build/demo.txt"));
