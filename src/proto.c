@@ -542,6 +542,8 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 				nftp_free(n);
 				return rv;
 			}
+			*rmsg = strdup(ctx->wfname);
+			*rlen = strlen(ctx->wfname);
 			// hash check
 			rv = nftp_file_hash(fullpath2, &hashcode);
 			if (0 != rv) {
