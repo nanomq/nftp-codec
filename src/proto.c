@@ -694,6 +694,33 @@ err:
 }
 
 int
+nftp_proto_unregister(char * fname)
+{
+	int rv;
+
+	struct file_cb *fcb;
+
+	if (NULL == fname) return (NFTP_ERR_FILENAME);
+
+	if (0 == strcmp("*", fname))
+		// Not allowed. I think...
+		return NFTP_ERR_FILENAME;
+
+	// Find the fcb with this name and delete it
+	for (int i=1; i<nftp_vec_len(fcb_reg); ++i) {
+		rv = nftp_vec_get(fcb_reg, i, (void **)&fcb);
+		if (rv != 0)
+			return NFTP_ERR_VEC;
+		if (0 == strcmp(fcb->fname, fname)) {
+			nftp_vec_delete(fcb_reg, (void **)&fcb, i);
+			return (0);
+		}
+	}
+
+	return (NFTP_ERR_HT);
+}
+
+int
 nftp_set_recvdir(char * dir)
 {
 	char * rdir;

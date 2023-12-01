@@ -251,6 +251,7 @@ int nftp_proto_maker(char *fpath, int type, int key,
 int nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen);
 
 int nftp_proto_register(char *, int (*cb)(void *), void *);
+int nftp_proto_unregister(char *);
 
 int nftp_set_recvdir(char *);
 int test();
