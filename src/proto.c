@@ -351,7 +351,7 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		// Note. No type check.
 		p->type = type;
 
-		p->len = 5 + 4 + 2 + 2 + len;
+		p->len = 5 + 4 + 2 + 4 + len;
 		p->fileid = NFTP_HASH((const uint8_t *)fname, (size_t)strlen(fname));
 		p->blockseq = n;
 
