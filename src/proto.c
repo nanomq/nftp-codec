@@ -425,6 +425,13 @@ nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen)
 		        strlen(n->fname));
 		ctx->hashcode = n->hashcode;
 
+		if (ht_contains(&files, &n->fileid)) {
+			nftp_fatal("File with same fileid is processing [%d][%s]", n->fileid, n->fname);
+			nctx_free(ctx);
+			nftp_free(n);
+			return NFTP_ERR_HT;
+		}
+
 		iter = nftp_iter_alloc(NFTP_SCHEMA_VEC, fcb_reg);
 		nftp_iter_next(iter);
 		while (iter->key != NFTP_TAIL) {
