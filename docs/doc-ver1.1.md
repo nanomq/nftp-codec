@@ -64,7 +64,7 @@ The FILE packet contains the contents of file. And each block was contained in o
 | Length         | 4              | The size of this packet.             |
 | File Id        | 4              | File Id. As same as the one in ACK.  |
 | Block Seq      | 2              | Block sequence number. Start from 0. |
-| Content length | 2              | The length of content.               |
+| Content length | 4              | The length of content.               |
 | Content        | Content length | The content of block.                |
 
 + Actions
@@ -83,7 +83,7 @@ The END Packet is the last packet contain contents of file. It means the ending 
 | Length         | 4              | The size of this packet.             |
 | File Id        | 4              | File Id. As same as the one in ACK.  |
 | Block Seq      | 2              | Block sequence number. Start from 0. |
-| Content length | 2              | The length of content.               |
+| Content length | 4              | The length of content.               |
 | Content        | Content length | The content of block.                |
 
 ### GIVEME Packet
