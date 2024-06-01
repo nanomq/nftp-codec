@@ -720,6 +720,8 @@ nftp_proto_unregister(char * fname)
 			return NFTP_ERR_VEC;
 		if (0 == strcmp(fcb->fname, fname)) {
 			nftp_vec_delete(fcb_reg, (void **)&fcb, i);
+			free(fcb->fname);
+			free(fcb);
 			return (0);
 		}
 	}
