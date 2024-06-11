@@ -25,7 +25,6 @@
 #define NFTP_TYPE_GIVEME  0x05
 
 #define NFTP_SIZE         32
-#define NFTP_BLOCK_SZ     (32 * 1024) // Maximal size of single package
 #define NFTP_BLOCK_NUM    (0xFFFF) // Maximal number of blocks
 #define NFTP_FILES        32 // Receive up to 32 files at once
 #define NFTP_HASH(p, n)   nftp_crc32c(p, n)
@@ -253,7 +252,14 @@ int nftp_proto_handler(char *msg, int len, char **rmsg, int *rlen);
 int nftp_proto_register(char *, int (*cb)(void *), void *);
 int nftp_proto_unregister(char *);
 
+/*
+ * Setting recvdir or blocksz is not thread-safe.
+ * Those two functions just set a global inner variable and then return.
+ */
 int nftp_set_recvdir(char *);
+int nftp_set_blocksz(uint32_t);
+uint32_t nftp_get_blocksz();
+
 int test();
 
 #endif

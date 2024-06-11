@@ -156,7 +156,7 @@ nftp_file_blocks(char *fpath, size_t *blocks)
 		return rv;
 	}
 
-	*blocks = sz/NFTP_BLOCK_SZ + 1;
+	*blocks = sz/nftp_get_blocksz() + 1;
 	return (0);
 }
 
@@ -181,15 +181,15 @@ nftp_file_readblk(char *fpath, int n, char **strp, size_t *sz)
 	fseek(fp, 0, SEEK_END);
 	filesize = ftell(fp);
 
-	if (n > (int)filesize/NFTP_BLOCK_SZ) {
+	if ((size_t)n > filesize/nftp_get_blocksz()) {
 		return (NFTP_ERR_BLOCKS);
-	} else if (n == (int)filesize/NFTP_BLOCK_SZ) {
-		blksz = filesize - n*NFTP_BLOCK_SZ;
+	} else if ((size_t)n == filesize/nftp_get_blocksz()) {
+		blksz = filesize - n*nftp_get_blocksz();
 	} else {
-		blksz = NFTP_BLOCK_SZ;
+		blksz = nftp_get_blocksz();
 	}
 
-	fseek(fp, n*NFTP_BLOCK_SZ, SEEK_SET);
+	fseek(fp, n*nftp_get_blocksz(), SEEK_SET);
 
 	str = (char *) malloc(blksz + 1);
 	memset(str, '\0', blksz + 1);

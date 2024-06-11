@@ -20,6 +20,7 @@
 #endif
 
 static char *recvdir = NULL;
+static uint32_t blocksz = 32*1024; // default block size
 
 struct file_cb {
 	char *fname;
@@ -307,10 +308,10 @@ nftp_proto_maker(char *fpath, int type, int key, int n, char **rmsg, int *rlen)
 		if (0 != (rv = nftp_file_size(fpath, &len)))
 			return rv;
 
-		blocks = (len/NFTP_BLOCK_SZ) + 1;
+		blocks = (len/nftp_get_blocksz()) + 1;
 		if (blocks > (0xFFFF)) {
 			nftp_log("File is too large (MAXSIZE: %dKB).",
-			    (NFTP_BLOCK_SZ * NFTP_BLOCK_NUM / 1024));
+			    (nftp_get_blocksz() * NFTP_BLOCK_NUM / 1024));
 			return NFTP_ERR_BLOCKS;
 		}
 		p->blocks = (uint16_t)blocks;
@@ -745,6 +746,19 @@ nftp_set_recvdir(char * dir)
 	recvdir = rdir;
 
 	return (0);
+}
+
+int
+nftp_set_blocksz(uint32_t blksz)
+{
+	blocksz = blksz;
+	return (0);
+}
+
+uint32_t
+nftp_get_blocksz()
+{
+	return blocksz;
 }
 
 int
