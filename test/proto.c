@@ -167,6 +167,8 @@ test_proto_handler()
 	// assert(0 == nftp_proto_register("demo.txt", cb_proto_demo, (void *)"I'm demo recv."));
 	assert(0 == nftp_proto_register("*", cb_proto_demo, (void *)"I'm demo recv."));
 	assert(0 == nftp_set_recvdir("./build/"));
+	assert(0 == nftp_set_blocksz(16 * 1024));
+	assert((16 * 1024) == nftp_get_blocksz());
 
 	// Transferring is not started. So error.
 	assert(0 != nftp_proto_recv_status(bname, &cap, &nextseq));
